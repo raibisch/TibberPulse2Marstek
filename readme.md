@@ -22,6 +22,9 @@ This is a minimal implementation to communicate with the MARSTEK System over UDP
 It is (until now) not a full implementaton of all Shelly RPC protocols: only 'EM1.GetStatus'...NO HTTP, NO Webservice, No MQTT.
 (look at  https://github.com/Raibisch/Energy2Shelly_ESP for a full implementation..but with no Web-App pages)
 
+**REMARK for the program implementation:** 
+The program is based on the libs 'SMLDecode' and 'EMxSimulator' these could be used stand-alone for own implementations. for the Web-App I use some additional libs from my "Arduino Web-App" framework (in 'lib' folder). These Web-App Framework is used for my other projects and needs a 'data' folder for storing the Web-pages and the config-File. 
+
 ### Prepare Tibber-Adapter !
 [hacking Tibber-Pulse](doc/tibber_hack.md)
 
@@ -124,5 +127,6 @@ varMARSTEKAPI_s_url =192.168.x.xx;
 
 [MARSTEK open-API](doc/MarstekDeviceOpenApi.pdf)
 
+<hr>
 
 ...not testet for other MARSTEK systems...but could work ;-)
