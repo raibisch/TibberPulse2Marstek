@@ -119,7 +119,9 @@ varMARSTEKAPI_s_url =192.168.x.xx;
 
 ### Additional Docs
 [Tasmota and SML-protocol](doc/sml_tasmota.md)
+
 [hacking Tibber-Pulse](doc/tibber_hack.md)
+
 [MARSTEK open-API](doc/MarstekDeviceOpenApi.pdf)
 
 
