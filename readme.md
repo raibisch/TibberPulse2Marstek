@@ -22,13 +22,20 @@ This is a minimal implementation to communicate with the MARSTEK System over UDP
 It is (until now) not a full implementaton of all Shelly RPC protocols: only 'EM1.GetStatus'...NO HTTP, NO Webservice, No MQTT.
 (look at  https://github.com/Raibisch/Energy2Shelly_ESP for a full implementation..but with no Web-App pages)
 
+there is a CSV based remote procedure call response
+``` http:your-ip/fetch  ```  response:  ```12:55,-444,1,0,0,0,0,0``` (time,power,responseWatchdog)
+
 
 #### Remark for the program implementation:
 The program is based on the libs 'SMLDecode' and 'EMxSimulator' these could be used stand-alone for own implementations. for the Web-App I use some additional libs from my "AsyncWeb" framework (in 'lib' folder). These Web-App Framework is used for my other projects and needs a 'data' folder for storing the Web-pages and the config-File.
+...why using SPIFFS and not LITTLEFS: SPIFFS has still a smaller code footprint an for my application no backdraw (but could be changed in future)
+...to compilicated: use  'SMLDecode' and 'EMxSimulator' for your own implementation (I will add an minimal console based example in the 'example' folder)
+...no ESP: try to compile to your platform
 
 #### Todo (possible Extentions)
 * MARSTEK open API (alpha Version is included in '/lib/MastekAPI' for first testing)
 * other data sources ans shelly emulations (TASTMOTA, P1, ...see:  https://github.com/Raibisch/Energy2Shelly_ESP)
+* JSON HTTP response for Homeautomation systems (now: use CSV based fetch)
 * Ethernet ?
 * ..?
 
@@ -84,8 +91,8 @@ varMARSTEKAPI_i_port=30000;
 varMARSTEKAPI_s_url =192.168.x.xx;
 ````
 
-- upload program **and* data (PROJECT TASK  --> <Platform e.g. ESP32>) --> Build Filesystem Image --> Upload Filesystem Image
-- optional: only upload program and later do OTA Updata of SPIFFS-Data on Web upload page.
+- upload program **and** data (PROJECT TASK  --> <Platform e.g. ESP32>) --> Build Filesystem Image --> Upload Filesystem Image
+- optional: only upload program and later do OTA Updata of SPIFFS-Data on Web upload page (ota_ap.html)
 
 ### Setup ESP Web-App
 
