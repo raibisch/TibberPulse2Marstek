@@ -8,9 +8,10 @@ This solution is running on a ESP8255, ESP32, ESP32-S2 or -S3 Microcontroller.
 * You need no additional hardware interface  ... works without any external adapter.
 * You need not a Tibber contract...but works with contract ! (only the Tiber-Pulse-Bridge Hardware)
 
-**based on the great work of:**
-TheRealMoeder (Implementation for ESP): https://github.com/TheRealMoeder/Energy2Shelly_ESP
-Kudos to @sdeigms excellent work at https://github.com/sdeigm/uni-meter which made this port easily possible.
+#### based on the work of:
+* TheRealMoeder (implementation for ESP): https://github.com/TheRealMoeder/Energy2Shelly_ESP
+* Kudos to @sdeigms: https://github.com/sdeigm/uni-meter 
+* and many others
 
 
 ### How it works
