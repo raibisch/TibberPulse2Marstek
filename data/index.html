@@ -46,10 +46,10 @@
                watt_grid = myArray[1];
                document.getElementById('WATT').innerHTML  = watt_grid;  
 
-               var udpStatus = "EM1-connected"
+               var udpStatus = "connected";
                if (myArray[2] == 1)
                { 
-                 udpStatus ="!no EM1 request!";
+                 udpStatus ="!no MARSTEK request!";
                }
                document.getElementById('STATUS_UDP').innerHTML = udpStatus;
 

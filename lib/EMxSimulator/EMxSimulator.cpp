@@ -85,7 +85,7 @@ void EMxSimulator::EM1GetDeviceInfo() {
   jsonResponse["auth_en"] = false;
   jsonResponse["profile"] = "monophase";
   serializeJson(jsonResponse, serJsonResponse);
-  debug_println(serJsonResponse);
+  //debug_println(serJsonResponse);
 }
 
 void EMxSimulator::EM1GetStatus()
@@ -100,7 +100,7 @@ void EMxSimulator::EM1GetStatus()
   jsonResponse["freq"] = 50;
   jsonResponse["calibration"] = "factory";
   serializeJson(jsonResponse, serJsonResponse);
-  debug_println(serJsonResponse);
+  //debug_println(serJsonResponse);
 }
 
 void EMxSimulator::EM1GetConfig() {
@@ -110,7 +110,7 @@ void EMxSimulator::EM1GetConfig() {
   jsonResponse["reverse"] = false;
   jsonResponse["ct_type"] = "50A";
   serializeJson(jsonResponse, serJsonResponse);
-  debug_println(serJsonResponse);
+  //debug_println(serJsonResponse);
 }
 
 
@@ -130,7 +130,7 @@ void EMxSimulator::rpcWrapper() {
 
 
 /// @brief parse input from UDP
-/// beta version: only pharse EM1.GetStatus (shelly EM one phase)
+/// beta version: only pharse EM1.GetStatus (shelly PRO EM1-50)
 void EMxSimulator::parseUdpRPC() {
   uint8_t buffer[1024];
   int packetSize = _UdpRPC.parsePacket();
@@ -138,8 +138,7 @@ void EMxSimulator::parseUdpRPC() {
     JsonDocument json;
     int rSize = _UdpRPC.read(buffer, 1024);
     buffer[rSize] = 0;
-    udpRequestCount = 0;
-    debug_printf("Received UDP packet from %s Port:%d\r\n", _UdpRPC.remoteIP().toString().c_str(), _UdpRPC.remotePort());
+    debug_printf("<-UDP-Rx %s:%d ", _UdpRPC.remoteIP().toString().c_str(), _UdpRPC.remotePort());
     debug_println((char *)buffer);
 
     deserializeJson(json, buffer);
@@ -164,33 +163,37 @@ void EMxSimulator::parseUdpRPC() {
         //rpcWrapper();
         //_UdpRPC.UDPPRINT(serJsonResponse.c_str());
       
-       } else if (json["method"] == "EM1.GetStatus") {
+       } 
+       else if (json["method"] == "EM1.GetStatus") 
+       {
 #ifdef WEB_APP
        AsyncWebLog.printf("[EM1.GetStatus] act_power:%4.2f\r\n", TotalPower.power_filterfactor);
 #endif
         EM1GetStatus();
         rpcWrapper();
+        debug_printf("->UDP-Tx %s:%d  ", _UdpRPC.remoteIP().toString().c_str(), udpPort);
+        debug_println(serJsonResponse);
         _UdpRPC.UDPPRINT(serJsonResponse.c_str());
-      } else if (json["method"] == "EM1.GetConfig") {
+        udpRequestCount = 0; // for Timeout !
+       } 
+       else if (json["method"] == "EM1.GetConfig") 
+       {
         EM1GetConfig();
         rpcWrapper();
+       
         _UdpRPC.UDPPRINT(serJsonResponse.c_str());
-
-      } else {
-        debug_printf("RPC over UDP: unknown request: %s\n", buffer);
-      }
-      _UdpRPC.endPacket();
+       } else {
+        debug_printf("UDP-Rx: unknown request: %s\n", buffer);
+       }
+       _UdpRPC.endPacket();
     }
   }
 }
 
 // ------------- Public -------------------------------------
 
-bool EMxSimulator::getRequestTimeout()
-{
-  debug_printf("[EMx] udpRequestCount:%d\r\n", udpRequestCount);
-  {if (udpRequestCount > MAX_REQUEST_COUNT){return true;}else{return false;}}
-}
+
+
 
 /// @brief Init (place in 'init' function)
 /// @param port UDP-Port 
@@ -208,7 +211,7 @@ bool EMxSimulator::init(uint16_t port, float filterfactor)
 /// @param kwhIn 
 /// @param kwhOut 
 /// @return 
-bool EMxSimulator::setData_1Phase(double watt, double kwhIn, double kwhOut)
+bool EMxSimulator::setData_AllPhase(double watt, double kwhIn, double kwhOut)
 { 
   setPowerData(watt);
   setEnergyData(kwhIn, kwhOut);	
@@ -219,6 +222,16 @@ bool EMxSimulator::setData_1Phase(double watt, double kwhIn, double kwhOut)
 void EMxSimulator::loop()
 {
 	parseUdpRPC();
+}
+
+
+#define MAX_REQUEST_COUNT 10 
+/// @brief Test Timeout for UDP requests from MARSTEK
+/// @return 0=ok 1=no UDP request from MARSTEK
+bool EMxSimulator::getRequestTimeout()
+{
+  //debug_printf("[EMx] udpRequestCount:%d\r\n", udpRequestCount);
+  {if (udpRequestCount > MAX_REQUEST_COUNT){return true;}else{return false;}}
 }
 
 

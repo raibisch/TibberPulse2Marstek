@@ -638,7 +638,7 @@ void loop()
     AsyncWebLog.printf("[SML] %dW In:%.2fkWh Out:%.2fkWh\r\n", smldecoder.getWatt(), smldecoder.getInputkWh(), smldecoder.getOutputkWh());
 #endif
 #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
-    shellyEMx.setData_1Phase(smldecoder.getWatt(),smldecoder.getInputkWh(),smldecoder.getOutputkWh());
+    shellyEMx.setData_AllPhase(smldecoder.getWatt(),smldecoder.getInputkWh(),smldecoder.getOutputkWh());
 #endif
 #endif 
 
@@ -656,7 +656,14 @@ void loop()
   if (millis() - TimerFastDuration > TimerFast)
   {
     TimerFast = millis();
-    blinkLED();     
+    if (shellyEMx.getRequestTimeout())
+    {
+      setLED(1);
+    }
+    else
+    {
+      blinkLED(); 
+    }    
   } // TimerFastDuration
 
 #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)

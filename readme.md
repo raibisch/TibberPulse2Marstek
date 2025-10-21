@@ -88,19 +88,23 @@ varMARSTEKAPI_s_url =192.168.x.xx;
 * look at WiFi-Connections for AP 'TibberPulse2Marstek'
 * open the Web-APP with 'http:192.168.4.1/ota_ap.html
 * there is minimal Webpage for uploading data
+
 > ![screenshot](pict/ota_ap_page.png)
+
 * select from 'upload/spiffs.bin' for myFS.bin
 * REBOOT
 
 ##### Start with data pages and valid WIFI-credentials
 * open "http:your-ip-addr/" for default page.
-![screenshot](pict/start_page.png)
-* no UDP connection: **! no EM1 request !** (or at first startup before Marstek setup)
-* UDP connection ok: **EM1 connected** (Marstek polls per UDP)
 
-<hr>
+![screenshot](pict/start_page.png)
+
+* no UDP connection: **! no MASTEK request !** (or at first startup before Marstek setup) **ESP-LED=ON**
+* UDP connection ok: **connected** (Marstek polls per UDP) **ESP-LED=blinking**
+
 
 * go to "Setup" --> "Config-Data" and edit the init data.
+
 ![screenshot](pict/config_page.png)
 
 

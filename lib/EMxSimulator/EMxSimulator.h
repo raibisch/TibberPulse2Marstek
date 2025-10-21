@@ -95,8 +95,6 @@ void loop(){
 #endif
 
 
-#define MAX_REQUEST_COUNT 20
-
 class EMxSimulator
 {
   private:  
@@ -169,7 +167,7 @@ WiFiClient _wificlient;
     ~EMxSimulator () {};
    bool init(uint16_t port, float filterfactor=1.0);
    void loop();
-   bool setData_1Phase(double watt, double grindIn, double grindOut);
+   bool setData_AllPhase(double watt, double grindIn, double grindOut);
    void setFilterFactor(double ff) { filterFactor = ff;};
    bool getRequestTimeout();
 };
