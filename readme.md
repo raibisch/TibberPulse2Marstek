@@ -77,7 +77,7 @@ varSML_s_user=admin;
 
 ;Shelly EM1 UDP Simulation for Marstek
 varEMX_i_port=2223;  
-varEMX_f_filterfactor=1.0;  Power-factor for Mastek 
+varEMX_f_filterfactor=1.0;  Power_factor_for_small_power_values 
 
 ;Marstek open API
 varMARSTEKAPI_i_port=30000;
@@ -105,20 +105,37 @@ varMARSTEKAPI_s_url =192.168.x.xx;
 
 ![screenshot](pict/start_page.png)
 
-* no UDP connection: **! no MASTEK request !** (or at first startup before Marstek setup) **ESP-LED=ON**
-* UDP connection ok: **connected** (Marstek polls per UDP) **ESP-LED=blinking**
+* no UDP connection: **'! no MASTEK request !'** (or at first startup before Marstek setup) --> **ESP-LED=ON**
+* UDP connection ok: **'connected'** (Marstek polls per UDP) --> **ESP-LED=blinking**
 
 
 * go to "Setup" --> "Config-Data" and edit the init data.
 
 ![screenshot](pict/config_page.png)
 
+#### Setup Wifi
+varWIFI_s_mode=STA;//AP=AccessPointSTA=Station
+varWIFI_s_password=xxxxxxx;
+varWIFI_s_ssid=XXXXX;
 
 
-### MARSTEK Setup
-* On MARSTEK App "CT-change" select "Shelly PRO EM-50" as energy meter. (MASTEK and ESP in same Network!)...starts with Testmode searching for CT-Device(1-2min).
+#### Setup Tibber-Pulse
+varSML_s_url=192.168.x.xx;
+varSML_s_password=XXXX-XXXX;
+varSML_s_user=admin;
 
-* at the Web-App you see the message: **'EM1 connected'** if the MARSTEK polls over UDP
+#### Setup Marstek
+varEMX_i_port=2223;  
+varEMX_f_filterfactor=1.0;  Power_factor_for_small_power_values 
+
+#### Setup Marstek-open-API (early alpha)
+varMARSTEKAPI_i_port=30000;
+varMARSTEKAPI_s_url =192.168.x.xx;
+
+### Setup in MARSTEK App
+* "CT-change" select "Shelly PRO EM-50" as energy meter. (MASTEK and ESP in same Network!)...starts with Testmode searching for CT-Device(1-2min).
+
+* at the Web-App you see the message: **'connected'** if the MARSTEK polls over UDP
 * MARSTEK APP shows "CT" highlighted and on "CT-Page" "Online" (sometimes needs a down-scroll to update the value)
 
 
