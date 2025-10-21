@@ -1,0 +1,22 @@
+
+;copy or rename this file to config.txt 
+;edit WIFI credentials
+
+arDEVICE_s_name=Tibber2Marstek;
+varWIFI_s_mode=STA;//AP=AccessPointSTA=Station
+varWIFI_s_password=xxxxxxx;
+varWIFI_s_ssid=XXXXX;
+
+;tibberpulse
+varSML_s_url=192.168.x.xx;
+varSML_s_password=XXXX-XXXX;
+varSML_s_user=admin;
+
+;Shelly EM1 UDP Simulation for Marstek
+varEMX_i_port=2223;  
+varEMX_f_filterfactor=1.0;  Power-factor for Mastek 
+
+;Marstek open API
+varMARSTEKAPI_i_port=30000;
+varMARSTEKAPI_s_url =192.168.x.xx
+
