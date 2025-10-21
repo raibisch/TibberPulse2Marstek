@@ -5,7 +5,7 @@ Use your 'Tibber-Pulse-Bridge' Adapter in 'self-consumption mode' for 'MARSTEK-V
 ![screenshot](pict/tibber_pulse_bridge.png) **<-->** ![screenshot](pict/marstek_app.png)
 
 This solution is running on a ESP8255, ESP32, ESP32-S2 or -S3 Microcontroller. 
-* You need no additional hardware ...without any soldering.
+* You need no additional hardware interface  ... works without any external adapter.
 * You need not a Tibber contract...but works with contract ! (only the Tiber-Pulse-Bridge Hardware)
 
 **based on the great work of:**
@@ -22,12 +22,18 @@ This is a minimal implementation to communicate with the MARSTEK System over UDP
 It is (until now) not a full implementaton of all Shelly RPC protocols: only 'EM1.GetStatus'...NO HTTP, NO Webservice, No MQTT.
 (look at  https://github.com/Raibisch/Energy2Shelly_ESP for a full implementation..but with no Web-App pages)
 
-**REMARK for the program implementation:** 
-The program is based on the libs 'SMLDecode' and 'EMxSimulator' these could be used stand-alone for own implementations. for the Web-App I use some additional libs from my "Arduino Web-App" framework (in 'lib' folder). These Web-App Framework is used for my other projects and needs a 'data' folder for storing the Web-pages and the config-File. 
+
+#### Remark for the program implementation:
+The program is based on the libs 'SMLDecode' and 'EMxSimulator' these could be used stand-alone for own implementations. for the Web-App I use some additional libs from my "AsyncWeb" framework (in 'lib' folder). These Web-App Framework is used for my other projects and needs a 'data' folder for storing the Web-pages and the config-File.
+
+#### Todo (possible Extentions)
+* MARSTEK open API (alpha Version is included in '/lib/MastekAPI' for first testing)
+* other data sources ans shelly emulations (TASTMOTA, P1, ...see:  https://github.com/Raibisch/Energy2Shelly_ESP)
+* Ethernet ?
+* ..?
 
 ### Prepare Tibber-Adapter !
 [hacking Tibber-Pulse](doc/tibber_hack.md)
-
 
 ### Program Setup in Platform-IO
 
