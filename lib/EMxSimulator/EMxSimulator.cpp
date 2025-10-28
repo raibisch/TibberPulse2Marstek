@@ -1,8 +1,22 @@
 #include "EMxSimulator.h"
 
-#ifdef WEB_APP
-#include "AsyncWebLog.h" // for logging in Webbroweser
+
+//#undef DEBUG_PRINT
+
+#ifdef DEBUG_PRINT
+#define debug_begin(...) Serial.begin(__VA_ARGS__);
+#define debug_print(...) Serial.print(__VA_ARGS__);
+#define debug_write(...) Serial.write(__VA_ARGS__);
+#define debug_println(...) Serial.println(__VA_ARGS__);
+#define debug_printf(...) Serial.printf(__VA_ARGS__);
+#else
+#define debug_begin(...)
+#define debug_print(...)
+#define debug_printf(...)
+#define debug_write(...)
+#define debug_println(...)
 #endif
+
 
 /// @brief  fix for Marstek (needs values with decimal numbers)
 /// @param value 
@@ -22,34 +36,38 @@ void EMxSimulator::setPowerData(double totalPower) {
   // for Shelly EM1
   
   // reduce amplification for small values
-  double pwrFilterFactor = 0;
-  if (abs(totalPower < 50))
+  double pwrFilterValue = totalPower;
+  if ((totalPower > 3)&&(totalPower < 200))
   {
-    pwrFilterFactor = totalPower * filterFactor;
-  } 
-  else
-  {
-    pwrFilterFactor = totalPower;
+     if (totalPower < 50)
+     {
+       pwrFilterValue = (totalPower * filterFactor * 0.8) +1;
+     }
+     pwrFilterValue = totalPower * filterFactor;
   }
+   
+ 
 
   // for Shelly EM1
   TotalPower.power_raw          = round2(totalPower);
-  TotalPower.power_filterfactor = round2(pwrFilterFactor);
-  TotalPower.apparentPower      = round2(pwrFilterFactor);
+  TotalPower.power_filterfactor = round2(pwrFilterValue);
+  TotalPower.apparentPower      = round2(pwrFilterValue);
   TotalPower.voltage            = defaultVoltage;
-  TotalPower.current            = round2(pwrFilterFactor / double(defaultVoltage));
+  TotalPower.current            = round2(pwrFilterValue / double(defaultVoltage));
   TotalPower.frequency          = defaultFrequency;
   TotalPower.powerFactor        = defaultPowerFactor;
   
   // for Shelly 3EM
+  /*
   for (int i = 0; i <= 2; i++) {
-    PhasePower[i].power_filterfactor   = round2(pwrFilterFactor) * 0.3333;
+    PhasePower[i].power_filterfactor   = round2(pwrFilterValue) * 0.3333;
     PhasePower[i].voltage              = round2(defaultVoltage);
     PhasePower[i].current              = round2(PhasePower[i].power_filterfactor/ PhasePower[i].voltage);
     PhasePower[i].apparentPower        = round2(PhasePower[i].power_filterfactor);
     PhasePower[i].powerFactor          = defaultPowerFactor;
     PhasePower[i].frequency            = defaultFrequency;
   }
+  */
   udpRequestCount++;
  
   //debug_printf("   %.1f[W]\r\n",totalPower);
@@ -128,7 +146,6 @@ void EMxSimulator::rpcWrapper() {
   serializeJson(jsonResponse, serJsonResponse);
 }
 
-
 /// @brief parse input from UDP
 /// beta version: only pharse EM1.GetStatus (shelly PRO EM1-50)
 void EMxSimulator::parseUdpRPC() {
@@ -138,15 +155,16 @@ void EMxSimulator::parseUdpRPC() {
     JsonDocument json;
     int rSize = _UdpRPC.read(buffer, 1024);
     buffer[rSize] = 0;
-    debug_printf("<-UDP-Rx %s:%d ", _UdpRPC.remoteIP().toString().c_str(), _UdpRPC.remotePort());
-    debug_println((char *)buffer);
+    debug_printf("<-UDP-Rx %s:%d \r\n", _UdpRPC.remoteIP().toString().c_str(), _UdpRPC.remotePort());
+    //debug_println((char *)buffer);
 
     deserializeJson(json, buffer);
     if (json["method"].is<JsonVariant>()) {
       rpcId = json["id"];
       strcpy(rpcUser, "EMPTY");
       _UdpRPC.beginPacket(_UdpRPC.remoteIP(), _UdpRPC.remotePort());
-      if (json["method"] == "Shelly.GetDeviceInfo") {
+      // until now not implemented...maybe not necssesary ;-)
+      //if (json["method"] == "Shelly.GetDeviceInfo") {
         //GetDeviceInfo();
         //rpcWrapper();
         //_UdpRPC.UDPPRINT(serJsonResponse.c_str());
@@ -162,17 +180,17 @@ void EMxSimulator::parseUdpRPC() {
         //EMGetConfig();
         //rpcWrapper();
         //_UdpRPC.UDPPRINT(serJsonResponse.c_str());
-      
-       } 
-       else if (json["method"] == "EM1.GetStatus") 
+       //} 
+       //else 
+       if (json["method"] == "EM1.GetStatus") 
        {
 #ifdef WEB_APP
-       AsyncWebLog.printf("[EM1.GetStatus] act_power:%4.2f\r\n", TotalPower.power_filterfactor);
+       //AsyncWebLog.printf("[EM1]GetStatus act_power:%4.2f\r\n", TotalPower.power_filterfactor);
 #endif
         EM1GetStatus();
         rpcWrapper();
-        debug_printf("->UDP-Tx %s:%d  ", _UdpRPC.remoteIP().toString().c_str(), udpPort);
-        debug_println(serJsonResponse);
+        //debug_printf("->UDP-Tx %s:%d  ", _UdpRPC.remoteIP().toString().c_str(), udpPort);
+        //debug_println(serJsonResponse);
         _UdpRPC.UDPPRINT(serJsonResponse.c_str());
         udpRequestCount = 0; // for Timeout !
        } 

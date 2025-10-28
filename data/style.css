@@ -6,23 +6,43 @@ html {
   margin: auto;
   text-align: center;
   font-size:0.8rem;
-  min-width:300px;
+  min-width:240px;
 }
-h3{padding:10px;}
+
+:root {
+  --ringcolor: black;
+  --pwrplus:1deg;
+}
+
 body{ font-weight: bold; 
-  background-color: gray;
-  color: black;
+  background-color: black;
+  color: gray;
+}
+
+.outer_frame{
+   background-color: rgb(36, 36, 36);
+   width:  96%;
+   margin : 8px;
+   /*min-height: 500px;*/
+   border-radius: 16px;
+   padding-top: 5px;
+}
+
+
+h2{
+  padding:10px;
+  color: lightgray;
 }
 
 .button, .buttonblue, .buttongreen, .buttonred, .buttonyellow, .buttonorange, .buttonlink { 
   display: inline-block;
   width: 75%;
-  max-width: 280px;
-  padding: 15px 20px;
+  max-width: 270px;
+  padding: 10px 20px;
   border: none;
   border-radius: 10px;
   color: white;
-  font-size: 2rem;
+  font-size: 1.5rem;
   text-align: center;
   cursor: pointer;
 }
@@ -126,10 +146,10 @@ input{
 
 table{ 
  width: 90%;
- max-width: 480px;
- padding: 15px 20px;
+ max-width: 380px;
+ padding: 10px 50px; 
  margin-left: auto;
- margin-right: auto;
+ margin-right:auto;
  }
 
 th{
@@ -142,9 +162,9 @@ td{
   background-color: white;
   color: black;
   font-size: 1rem;
-  border-radius: 0.8rem;
+  border-radius: 10px;
   padding: 0.5rem 0rem;
-  border: 3px solid goldenrod;
+  border: 3px solid gray;
 }
 
 .td_blue{
@@ -204,15 +224,10 @@ hr{
   cursor: pointer;
 }
 
-:root {
-  --ringcolor: black;
-  --pwrplus:1deg;
-}
-
 .outerring {
   display: inline-block;
-  width: 250px;
-  height: 200px;
+  width: 280px;
+  height: 100px;
   border-radius: 10%;
   position: relative;
   background-color: black;
@@ -222,8 +237,8 @@ hr{
 
 .outerring_blink {
   display: inline-block;
-  width: 250px;
-  height:200px;
+  width: 280px;
+  height:100px;
   border-radius: 10%;
   position: relative;
   background-color: black;
@@ -234,9 +249,9 @@ hr{
 
   .innerring {
     position: absolute;
-    width: 85%;
+    width: 90%;
     height: 80%;
-    border-radius: 8%;
+    border-radius: 5%;
     background-color: #ffffff;
     top: 50%;
     left: 50%;
@@ -245,34 +260,36 @@ hr{
   }
   
 .ringtext_value {
-  font-size: 2.7rem;
+  font-size: 2.0rem;
   position: relative;
-  top: 30%;
+  top: 25px;
   text-align: center;
+  color: black;
 }
 
 .ringtext_unit {
+  font-size: 0.8rem;
   position: relative;
-  top: 30%;
+  top: 25px;
   text-align: center;
 }
 
 .ringtext_time {
   position: relative;
-  top: 40%;
+  top: 35px;
   text-align: center;
 }
 
 .ringtext_status1 {
   position: relative;
-  top: 44%; 
+  top: 28px;
   text-align: center;
 }
 
 .ringtext_status2 {
   color: white;
   position: relative;
-  top: 47%; 
+  top: 55px;
   text-align: center;
 }
 
@@ -280,7 +297,6 @@ hr{
   width: 80%;
   height: 80%;
 }
-
 
 .image-btn{
   cursor: pointer;
@@ -290,6 +306,7 @@ hr{
   max-width: 120px;
   padding: 25px;
   text-align: left;
+  color: lightgray;
 }
 
 .image-btn img{
@@ -389,4 +406,10 @@ input[type="radio"] {
 input[type=radio]:checked {
   background: goldenrod;
   background-color: red
+}
+
+@keyframes blinkingBackground {
+    40% {
+        opacity: 0.8;
+    }
 }

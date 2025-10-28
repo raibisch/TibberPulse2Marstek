@@ -94,7 +94,7 @@ byte * SMLdecode::httpGETRequest(const char* http_url)
   // _passw = "xxxx-xxxx";
 
   int getlength = 0;
-  http.setTimeout(500);
+  http.setTimeout(700); // in msec
   http.begin(_wificlient, http_url);
   http.setAuthorization(_usern.c_str(), _passw.c_str());
   int httpResponseCode = http.GET();
@@ -297,10 +297,9 @@ bool SMLdecode::read()
   }
 
   // -------------new --------------------------
-  byte sml_1_8_0[] {0x77, 0x07, 0x01, 0x00, 0x01, 0x08, 0x00, 0xff};   // Energy IN (1.8.0)
+  byte sml_1_8_0[] {0x77, 0x07, 0x01, 0x00, 0x01, 0x08, 0x00, 0xff};   // Energy IN  (1.8.0)
   byte sml_2_8_0[] {0x77, 0x07, 0x01, 0x00, 0x02, 0x08, 0x00, 0xff};   // Energy OUT (2.8.0)
-  // Power Sum(in= pos. out= neg)
-  byte sml_1_7_0[]{0x77, 0x07, 0x01, 0x00, 0x10, 0x07, 0x00, 0xff};
+  byte sml_1_7_0[] {0x77, 0x07, 0x01, 0x00, 0x10, 0x07, 0x00, 0xff};    // Power Sum  (1.7.0) in= pos. out= neg)
   uint32_t inputenergy  = 0;
   uint32_t outputenergy = 0;
   if (!decodePayload(inputenergy,smlpayload, sml_1_8_0, sizeof(sml_1_8_0), 19))

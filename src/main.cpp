@@ -2,7 +2,6 @@
 
 // Build in libs
 #include <Esp.h>
-
 #include <FS.h>
                  
 
@@ -11,6 +10,8 @@
   #include "soc/soc.h"
   #include "soc/rtc_cntl_reg.h"  
   #include "esp_rom_gpio.h"
+  #include "esp_pm.h"        // power-management
+  #include "esp_check.h"     // ESP IDF error handling
 
   #include <HTTPClient.h>
   #include <AsyncTCP.h>
@@ -115,11 +116,12 @@ const char* TimeServerLocal = "192.168.2.1";
 const char* TimeServer      = "europe.pool.ntp.org";
 const char* TimeZone        = "CET-1CEST,M3.5.0,M10.5.0/3";       // Central Europe
 ESP32ntp ntpclient;
+bool isSTA_MODE = true;  // false = AP-Mode
 
 
 const unsigned long   TimerFastDuration = 300;
 unsigned long   TimerFast = 0;
-const unsigned long   TimerSlowDuration   = 1000;   
+const unsigned long   TimerSlowDuration   = 1100;   
 unsigned long   TimerSlow = 0;     
 
 #ifdef ESP32_S3_ZERO
@@ -148,19 +150,19 @@ void setLED(uint8_t i)
     switch (neopixel_color)
     {
     case 'r': 
-      neopixelWrite(NEOPIXEL,6,0,0); // red
+      neopixelWrite(NEOPIXEL,1,0,0); // red
       break;
     case 'g':
-      neopixelWrite(NEOPIXEL,0,6,0); // green
+      neopixelWrite(NEOPIXEL,0,1,0); // green
       break;
     case 'b':
-      neopixelWrite(NEOPIXEL,0,0,6); // blue
+      neopixelWrite(NEOPIXEL,0,0,1); // blue
       break;
     case 'y':
-       neopixelWrite(NEOPIXEL,4,2,0); // yellow
+       neopixelWrite(NEOPIXEL,2,1,0); // yellow
       break;
     case 'w':
-      neopixelWrite(NEOPIXEL,2,2,2); // white
+      neopixelWrite(NEOPIXEL,1,1,1); // white
       break;
     default:
        break;
@@ -340,19 +342,22 @@ void drawDisplay_loop()
       //u8g2.setFont(u8g2_font_logisoso16_tr);
       u8g2.setFont(u8g2_font_8x13_tr);
       u8g2.setCursor(0,16);
-      u8g2.printf("%4d[W]", smldecoder.getWatt());
+      u8g2.printf("%4dW", smldecoder.getWatt());
 #endif
 #if (defined MARSTEK_API)
       u8g2.setCursor(60,16);
-      u8g2.printf("%2d[SOC]",marstek.getSOC());
+      u8g2.printf("%2d%%",marstek.getSOC());
+     
 #endif
       // 2. Zeile 
       u8g2.setFont(u8g2_font_8x13_tr);
       u8g2.setCursor(0,32);
-      u8g2.printf(ntpclient.getTimeString());
-      u8g2.drawStr(40,32,":");
-      u8g2.setCursor(50,32);
-      u8g2.printf("%02d",ntpclient.getTimeInfo()->tm_sec);
+      //u8g2.printf(ntpclient.getTimeString());
+      //u8g2.drawStr(40,32,":");
+      //u8g2.setCursor(50,32);
+      //u8g2.printf("%02d",ntpclient.getTimeInfo()->tm_sec);
+
+       u8g2.printf("%4dW", marstek.getOnGridPower());
      } while( u8g2.nextPage() );
     }
 }
@@ -364,10 +369,10 @@ void initFileVarStore()
   varStore.Load();
 }       
 
-//////////////////////////////////////////
-/// @brief Init Wifi
-/////////////////////////////////////////
-void initWiFi()
+
+/// @brief  Init WiFi
+/// @return  false = AP-Mode, true= STA-Mode
+bool initWiFi()
 {
 #ifdef MINI_32
    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG,0); // brownout problems
@@ -380,6 +385,7 @@ void initWiFi()
     Serial.print("IP Address: ");
     SYS_IP = WiFi.softAPIP().toString();
     Serial.println(SYS_IP);
+    return false;
    }
    else
    {
@@ -412,9 +418,6 @@ void initWiFi()
     delay(300);
       
     SYS_IP = WiFi.localIP().toString();
-#ifdef DISPLAY_OLED
-    drawDisplay_init(varStore.varWIFI_s_ssid.c_str(), SYS_IP.c_str());
-#endif
     debug_println("CONNECTED!");
     #ifdef ESP32
     debug_printf("WiFi-Power:%d\r\n",WiFi.getTxPower())
@@ -427,7 +430,7 @@ void initWiFi()
      ESP.restart();
     }
    }
-  return;
+  return true;
 }     
 
 void testWiFiReconnect()
@@ -476,7 +479,7 @@ String setHtmlVar(const String& var)
      sFetch += SYS_Version;  
   #ifdef ESP32
      sFetch += "\nPlatform   :";
-     sFetch +=  String(ESP_PLATFORM);  
+     sFetch +=  ESP.getChipModel();
   #else
      sFetch += "\nPlatform   :ESP8266";
   #endif
@@ -492,6 +495,10 @@ String setHtmlVar(const String& var)
    
      sFetch += "\nMinFreeHeap:";
      sFetch += String(ESP.getMinFreeHeap());
+     sFetch += "\nFree Sketch:";
+     sFetch += String(ESP.getFreeSketchSpace());
+     sFetch += "\nAppFreq Mhz:";
+     sFetch += String(getApbFrequency()/ 1000000);
   #else
      sFetch += "\nFreeHeap   :";
      sFetch += String(ESP.getFreeHeap());
@@ -512,11 +519,22 @@ void notFound(AsyncWebServerRequest *request)
 
 void initWebServer()
 { 
+ 
+
   //Route for root / web page
   webserver.on("/",          HTTP_GET, [](AsyncWebServerRequest *request)
   {
-   request->send(SPIFFS, "/index.html", String(), false, setHtmlVar);
+    if (isSTA_MODE) 
+    { 
+      request->send(SPIFFS, "/index.html", String(), false, setHtmlVar);
+    }
+    else
+    {
+      request->send(202, "text/plain", "goto: http://192.168.4.1/ota_ap.html");
+    }
   });
+
+
   //Route for root /index web page
   webserver.on("/index.html",          HTTP_GET, [](AsyncWebServerRequest *request)
   {
@@ -535,7 +553,20 @@ void initWebServer()
    varStore.SetVarString("varLogCount_s_val", ntpclient.getTimeString());
    request->send(SPIFFS, "/info.html", String(), false, setHtmlVar);
   });
-  
+
+  //Route for Chart
+  webserver.on("/gridchart.html",          HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+   request->send(SPIFFS, "/gridchart.html", String(), false, setHtmlVar);
+  });
+
+  // chart Icon
+  webserver.on("/chart.png",          HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+   request->send(myFS, "/chart.png", String(), false);
+  });
+
+
   sFetch.reserve(150);
   webserver.on("/fetch", HTTP_GET, [](AsyncWebServerRequest *request)
   {
@@ -551,11 +582,23 @@ void initWebServer()
     sFetch = ntpclient.getTimeString();                         // 0 = Time: 00:00
   #if (defined SML_TIBBER)
     sFetch += ',';
-    sFetch += smldecoder.getWatt();
+    sFetch += smldecoder.getWatt();            // 1
+    sFetch += ',';
+    sFetch += smldecoder.getInputkWh();        // 2
+    sFetch += ',';
+    sFetch += smldecoder.getOutputkWh();       // 3
   #endif
   #ifdef EM1_UDP_SIMULATION
     sFetch += ',';
-    sFetch += (uint)shellyEMx.getRequestTimeout();
+    sFetch += (uint)shellyEMx.getRequestTimeout();  // 4
+  #else
+    sFetch += ",0";
+  #endif
+  #ifdef MARSTEK_API
+    sFetch += ',';
+    sFetch += marstek.getSOC();               // 5
+     sFetch += ',';
+    sFetch += marstek.getOnGridPower();       // 6 
   #endif
     // include from other libs xxx.getCSVFetch()
     sFetch += ",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";     // for more values  
@@ -600,12 +643,44 @@ void setup()
   Serial.begin(115200);  
   Serial.println("***START***");                                       
   delay(500);
+  
   initLED();
   initSPIFFS();
   initFileVarStore(); 
   setcolor('b'); // blue
-  initWiFi();
+
+
+  // test power management
+  //#define CONFIG_PM_ENABLE=1
+  #if defined ESP32 && defined CONFIG_PM_ENABLE
+   // Enable power management with dynamic frequency scaling
+
+    //esp_pm_config_esp32_t pm_config;
+    //esp_pm_config_esp32s2_t pm_config;
+    esp_pm_config_esp32s3_t pm_config;
+
+    pm_config.max_freq_mhz = 80;
+    pm_config.min_freq_mhz = 20;
+    pm_config.light_sleep_enable = true;
+    ESP_ERROR_CHECK( esp_pm_configure(&pm_config) );
+  #endif
+  
+  isSTA_MODE = initWiFi();
   initWebServer(); 
+
+  #ifdef DISPLAY_OLED
+    drawDisplay_init(varStore.varWIFI_s_ssid.c_str(), SYS_IP.c_str());
+#endif
+
+  setcolor('g'); // green
+  setLED(1);
+  delay(1000);
+
+  if (!isSTA_MODE)
+  {
+    return;
+  }
+
 #if (defined SML_TIBBER)
   smldecoder.init(varStore.varSML_s_url.c_str(), varStore.varSML_s_user.c_str(), varStore.varSML_s_password.c_str());
 #endif
@@ -615,8 +690,7 @@ void setup()
 #ifdef MARSTEK_API
    marstek.init(varStore.varMARSTEKAPI_s_url, varStore.varMARSTEKAPI_i_port);
 #endif
-   setLED(0);
-  delay(1000);
+ 
 }
 
 ////////////////////////////////////////////////
@@ -626,11 +700,22 @@ void loop()
 {
    if (millis() - TimerSlowDuration > TimerSlow) 
    {
+
     TimerSlow = millis();                      // Reset time for next event
     testWiFiReconnect();
 
     ntpclient.update();   
     //debug_printf("Time: %s\r\n", ntpclient.getTimeString());
+
+#ifdef DISPLAY_OLED
+    drawDisplay_loop();
+#endif
+    
+   if(!isSTA_MODE)
+   {
+    delay(1);
+    return;
+   }
 
 #if defined SML_TASMOTA || defined SML_TIBBER
     smldecoder.read();
@@ -642,12 +727,8 @@ void loop()
 #endif
 #endif 
 
-#ifdef DISPLAY_OLED
-    drawDisplay_loop();
-#endif
-
-#ifdef MARSTEK_API
-    marstek.ESGetMode();
+#ifdef MARSTEK_API 
+    marstek.txloop();
 #endif
   } //TimerSlowDuration
 
@@ -656,11 +737,16 @@ void loop()
   if (millis() - TimerFastDuration > TimerFast)
   {
     TimerFast = millis();
+
+#if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
     if (shellyEMx.getRequestTimeout())
     {
       setLED(1);
+      delay(1000);
+      ESP.restart();
     }
     else
+#endif
     {
       blinkLED(); 
     }    
@@ -670,10 +756,9 @@ void loop()
     shellyEMx.loop();
 #endif
 
-  #ifdef MARSTEK_API
-  marstek.loop();
+#ifdef MARSTEK_API
+  marstek.rxloop();
 #endif
-
 
 delay(1);
 
