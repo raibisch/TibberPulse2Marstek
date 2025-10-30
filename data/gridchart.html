@@ -34,17 +34,18 @@ const data = {
     backgroundColor: 'blue',
     borderColor: 'rgb(100,100,255)',
     data: [],
-    tension: 0.2,
+    tension: 0.3,
    },
    
    {
     id: 1,
     borderWidth: 0,
+    pointRadius: 0, 
     label: 'Bat[W]',
-    backgroundColor: 'rgb(100, 255,100)',
-    borderColor: 'rgb(100,200,100)',
+    backgroundColor: 'rgb(100, 200,100)',
+    borderColor: 'rgb(100,255,100)',
     data: [],
-    tension: 0.4,
+    tension: 0.3,
     fill: {below: 'rgb(50,100,50)', value: 0, above: 'rgb(100,50,50)', value: 0}
    },
   
@@ -117,10 +118,10 @@ function addData2(chart, label, data1,data2)
     else
     {
      dataset.data.push(data2);
-     for (var i =i; i < dataset.data.length; i++)
-     {
-       dataset.backgroundColor[i] = chartColors.red;
-     }
+     //for (var i =i; i < dataset.data.length; i++)
+     //{
+     //  dataset.backgroundColor[i] = chartColors.red;
+     //}
     }
   });
   
@@ -140,10 +141,13 @@ watt_bat  = 0;
       //myResponse = myResponse.toUpperCase();
       //console.log(this.responseText);
       var myArray = myResponse.split(",");
+
       // test
-      //myArray = ["12:00","00","0","0"];
+      // myArray = ["12:00","00","0","0"];
       counter++;
-      //watt_grid = Math.floor(Math.random() * 10) + counter;
+      watt_grid = Math.floor(Math.random() * 10) + counter;
+      watt_bat    = Math.floor(Math.random() * 5) + counter;
+
       //console.log(myArray);
      
       if (myArray[1] != null)

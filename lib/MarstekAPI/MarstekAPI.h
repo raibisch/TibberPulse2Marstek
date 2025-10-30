@@ -60,7 +60,7 @@ class MarstekAPI
 #endif
 
    // wait for UDP answer (Rx) before resending
-   const unsigned long   _max_rx_wait = 1500; // 1.5 sec.
+   const unsigned long   _max_rx_wait = 30000; // 30sec
    unsigned long         _timer_rx_wait = 0;
     
    String serJsonResponse;
@@ -68,17 +68,17 @@ class MarstekAPI
    // Helper Functions
    //JsonVariant resolveJsonPath(JsonVariant variant, const char *path);
    void getUDPData();
+   void sendUDPData(const char* sJson);
 
    // put this to public for external call
-   void MarstekGetDevice();
-   void ESGetMode();
-   void BatGetStatus();
+   void Marstek_GetDevice();
+   void ES_GetMode();
+   void ES_GetStatus();
+   void Bat_GetStatus();
    
    struct MarstekData {
-     double onGridPower;
-     double offGridPower;
-     double feedIn;
-     double feedOut;
+     int onGridPower;
+     int offGridPower;
      int    batSoc;
    };
    MarstekData data;
@@ -86,6 +86,7 @@ class MarstekAPI
    enum RequestType 
    {
     ES_GETMODE = 0,
+    ES_GETSTATUS,
     BAT_GETSTATUS,
     MARSTEK_GETDEVICE,
 
@@ -98,8 +99,8 @@ class MarstekAPI
     MarstekAPI() {};
     ~MarstekAPI() {};
    bool init(String ip, uint16_t port);
-   void rxloop();
-   void txloop();
+   //inline void rxloop() { getUDPData();};
+   void loop();
    inline int getSOC() {return data.batSoc;};
    inline int getOnGridPower() {return data.onGridPower;};
 

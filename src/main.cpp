@@ -283,6 +283,7 @@ class VarStore final: public FileVarStore
 #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
      varEMX_i_port         = (uint16_t)GetVarInt(GETVARNAME(varEMX_i_port),2223);
      varEMX_f_filterfactor = GetVarFloat(GETVARNAME(varEMX_f_filterfactor), 1.0); 
+     shellyEMx.setFilterFactor(varEMX_f_filterfactor);
 #endif
 #endif
 
@@ -394,7 +395,7 @@ bool initWiFi()
     WiFi.setHostname(varStore.varDEVICE_s_name.c_str());
     WiFi.begin(varStore.varWIFI_s_ssid.c_str(), varStore.varWIFI_s_password.c_str());
     #if defined ESP32_S3_ZERO || defined MINI_32 || defined M5_COREINK
-    WiFi.setTxPower(WIFI_POWER_7dBm);// brownout problems with some boards or low battery load for M5_COREINK
+    WiFi.setTxPower(WIFI_POWER_5dBm);// brownout problems with some boards or low battery load for M5_COREINK
     //WiFi.setTxPower(WIFI_POWER_15dBm);// Test 15dB
     #endif
     #if defined DEBUG_PRINT && (defined ESP32_RELAY_X4 || defined ESP32_RELAY_X2)
@@ -649,22 +650,6 @@ void setup()
   initFileVarStore(); 
   setcolor('b'); // blue
 
-
-  // test power management
-  //#define CONFIG_PM_ENABLE=1
-  #if defined ESP32 && defined CONFIG_PM_ENABLE
-   // Enable power management with dynamic frequency scaling
-
-    //esp_pm_config_esp32_t pm_config;
-    //esp_pm_config_esp32s2_t pm_config;
-    esp_pm_config_esp32s3_t pm_config;
-
-    pm_config.max_freq_mhz = 80;
-    pm_config.min_freq_mhz = 20;
-    pm_config.light_sleep_enable = true;
-    ESP_ERROR_CHECK( esp_pm_configure(&pm_config) );
-  #endif
-  
   isSTA_MODE = initWiFi();
   initWebServer(); 
 
@@ -720,16 +705,12 @@ void loop()
 #if defined SML_TASMOTA || defined SML_TIBBER
     smldecoder.read();
 #ifdef WEB_APP
-    AsyncWebLog.printf("[SML] %dW In:%.2fkWh Out:%.2fkWh\r\n", smldecoder.getWatt(), smldecoder.getInputkWh(), smldecoder.getOutputkWh());
+    AsyncWebLog.printf("[SML]W:%d In:%.1f Out:%.1f\r\n", smldecoder.getWatt(), smldecoder.getInputkWh(), smldecoder.getOutputkWh());
 #endif
 #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
     shellyEMx.setData_AllPhase(smldecoder.getWatt(),smldecoder.getInputkWh(),smldecoder.getOutputkWh());
 #endif
 #endif 
-
-#ifdef MARSTEK_API 
-    marstek.txloop();
-#endif
   } //TimerSlowDuration
 
   // fast blink
@@ -742,8 +723,8 @@ void loop()
     if (shellyEMx.getRequestTimeout())
     {
       setLED(1);
-      delay(1000);
-      ESP.restart();
+      //delay(1000);
+      //ESP.restart();
     }
     else
 #endif
@@ -756,11 +737,11 @@ void loop()
     shellyEMx.loop();
 #endif
 
-#ifdef MARSTEK_API
-  marstek.rxloop();
+#ifdef MARSTEK_API 
+  marstek.loop();
 #endif
 
-delay(1);
+yield();
 
 }
 

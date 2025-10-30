@@ -37,17 +37,17 @@ void EMxSimulator::setPowerData(double totalPower) {
   
   // reduce amplification for small values
   double pwrFilterValue = totalPower;
-  if ((totalPower > 3)&&(totalPower < 200))
+  if ((abs(totalPower) > 5.0) && (abs(totalPower) < 100.0))
   {
-     if (totalPower < 50)
-     {
-       pwrFilterValue = (totalPower * filterFactor * 0.8) +1;
-     }
      pwrFilterValue = totalPower * filterFactor;
+  }
+  else
+  if (abs(totalPower) <= 5.0)
+  {
+    pwrFilterValue = -0.1;
   }
    
  
-
   // for Shelly EM1
   TotalPower.power_raw          = round2(totalPower);
   TotalPower.power_filterfactor = round2(pwrFilterValue);
@@ -153,8 +153,11 @@ void EMxSimulator::parseUdpRPC() {
   int packetSize = _UdpRPC.parsePacket();
   if (packetSize) {
     JsonDocument json;
-    int rSize = _UdpRPC.read(buffer, 1024);
-    buffer[rSize] = 0;
+    // old:
+    //int rSize = _UdpRPC.read(buffer, 1024);
+    //buffer[rSize] = 0;
+    _UdpRPC.read(buffer,packetSize);
+    buffer[packetSize] =0;
     debug_printf("<-UDP-Rx %s:%d \r\n", _UdpRPC.remoteIP().toString().c_str(), _UdpRPC.remotePort());
     //debug_println((char *)buffer);
 
@@ -185,11 +188,11 @@ void EMxSimulator::parseUdpRPC() {
        if (json["method"] == "EM1.GetStatus") 
        {
 #ifdef WEB_APP
-       //AsyncWebLog.printf("[EM1]GetStatus act_power:%4.2f\r\n", TotalPower.power_filterfactor);
+       AsyncWebLog.printf("[EM1]GetStatus act_power:%4.2f\r\n", TotalPower.power_filterfactor);
 #endif
         EM1GetStatus();
         rpcWrapper();
-        //debug_printf("->UDP-Tx %s:%d  ", _UdpRPC.remoteIP().toString().c_str(), udpPort);
+        debug_printf("->UDP-Tx %s:%d  ", _UdpRPC.remoteIP().toString().c_str(), udpPort);
         //debug_println(serJsonResponse);
         _UdpRPC.UDPPRINT(serJsonResponse.c_str());
         udpRequestCount = 0; // for Timeout !
@@ -209,10 +212,6 @@ void EMxSimulator::parseUdpRPC() {
 }
 
 // ------------- Public -------------------------------------
-
-
-
-
 /// @brief Init (place in 'init' function)
 /// @param port UDP-Port 
 /// @return true= ok , false= error
