@@ -7,6 +7,7 @@
 // https://eu.hamedata.com/ems/resource/agreement/MarstekDeviceOpenApi.pdf
 
 
+static   unsigned long   _timer_rx_wait = 0;
 
 
 void MarstekAPI::sendUDPData(const char* sJson)
@@ -17,7 +18,7 @@ void MarstekAPI::sendUDPData(const char* sJson)
    debug_println(_remotePort);
    debug_println(serJsonRequest);
 
-  _UdpRPC.setTimeout(1500);
+  //_UdpRPC.setTimeout(1500);
   _UdpRPC.beginPacket(_remoteIPaddr, _remotePort);
   _UdpRPC.UDPPRINT(sJson);
    getUDPData();
@@ -260,7 +261,7 @@ void MarstekAPI::ES_GetMode()
 
   serializeJson(jsonRequest, serJsonRequest);
 
-   AsyncWebLog.println("[MARS]-TX->ESGetMode\r\n");
+   AsyncWebLog.println("[MARS]-Tx->:ESGetMode\r\n");
    String sRequest = "{\"id\":0, \"method\":\"ES.GetMode\", \"params\":{\"id\":0}}";
    sendUDPData(sRequest.c_str());
    //sendUDPData(serJsonRequest.c_str());
@@ -300,18 +301,16 @@ void MarstekAPI::ES_GetStatus()
 
 }
 
-
-
-
 /// @brief get Date from UDP
 void MarstekAPI::getUDPData() 
 {
   uint8_t buffer[1024];
   String status = "";
-  _UdpRPC.setTimeout(1500);
+  _UdpRPC.setTimeout(2000);
   int packetSize = _UdpRPC.parsePacket();
   if (packetSize > 0)
   {
+	 udpRequestCount = 0;
      JsonDocument jsonUDPIn;
      //int rSize = _UdpRPC.read(buffer, 1024);
 	 for (int i = 0; i < packetSize; i++)
@@ -322,7 +321,7 @@ void MarstekAPI::getUDPData()
 	 
      //buffer[rSize] = 0; // add 0 for string end !
      debug_printf("<-Rx UDP PacketSize:%d \n%s", packetSize, (char*)buffer);
- 	 AsyncWebLog.print("[MARS]<-RxUDP: ");
+ 	 AsyncWebLog.print("[MARS]<-Rx-:");
      //debug_println((char *)buffer);
      deserializeJson(jsonUDPIn, buffer);
      if (jsonUDPIn["result"].is<JsonVariant>()) 
@@ -370,30 +369,32 @@ void MarstekAPI::getUDPData()
   }
 }
 
-
 // Public 
-bool MarstekAPI::init(String ip, uint16_t port)
+bool MarstekAPI::init(String ip, uint16_t port, uint16_t pollRateSec)
 {
    _UdpRPC.begin(port); // MARSTEK send on same port back !! ...some kind of strange handling ;-)
    _remotePort = port;
    _remoteIPaddr.fromString(ip);
    debug_printf("init MarstekAPI IP:%s Port:%d\r\n",_remoteIPaddr.toString().c_str(), _remotePort);
-   _timer_rx_wait = millis();
-  return true;
+   setPollRateSec(pollRateSec);
+   return true;
 }
 
 
-
+/// @brief place in main loop
 void MarstekAPI::loop()
-{
-   if ((millis() - _max_rx_wait) > _timer_rx_wait) 
+{ 
+   
+   if ((millis() > _pollRateMsec) && (millis() - _pollRateMsec > _timer_rx_wait) )
    {
     _timer_rx_wait = millis();                      // Reset time for next event
+	udpRequestCount++;
     switch (nextRequest)
     {
     case RequestType::ES_GETMODE:
       ES_GetMode();
-      //nextRequest = RequestType::ES_GETSTATUS;
+	  // for beta test only 'ES.GetMode'
+      //nextRequest = RequestType::MARSTEK_GETDEVICE;
       break;
 	case RequestType::ES_GETSTATUS:
 	  ES_GetStatus();
@@ -411,6 +412,18 @@ void MarstekAPI::loop()
       break;
     }
    }
+   else
+   {
+    getUDPData();
+	delay(1);;
+   }
+}
 
-   getUDPData();
+
+/// @brief Test Timeout for UDP requests from MARSTEK
+/// @return 0=ok 1=no UDP request from MARSTEK
+bool MarstekAPI::getRequestTimeout()
+{
+  //debug_printf("[EMx] udpRequestCount:%d\r\n", udpRequestCount);
+  {if (udpRequestCount > MAX_REQUEST_COUNT){return true;}else{return false;}}
 }

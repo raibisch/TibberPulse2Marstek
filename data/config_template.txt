@@ -19,6 +19,8 @@ varEMX_f_filterfactor=1.0;  Power-factor for Mastek
 ;Marstek open API
 varMARSTEKAPI_i_port=30000;
 varMARSTEKAPI_s_url =192.168.x.xx;
+varMARSTEKAPI_i_pollsec = 10;
+
 
 
 

@@ -3,7 +3,7 @@
    
     <head>
         <title>%DEVICEID%</title>
-        <meta content="width=device-width, initial-scale=0.8, user-scalable=yes" name="viewport">
+        <meta content="width=device-width, initial-scale=1.0, user-scalable=yes" name="viewport">
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta http-equiv="Pragma" content="no-cache" />
         <link rel="stylesheet" type="text/css" href="style.css">
@@ -64,7 +64,7 @@
               var myArray = myResponse.split(",");
 
               // test
-              //myArray = ["12:00","00","0","0"];
+              //myArray = ["12:00","100","111","111","0","333","444"];
               //console.log(myArray);
               var watt_grid = 0;
 
@@ -74,13 +74,13 @@
                watt_grid = myArray[1];
                document.getElementById('WATT').innerHTML  = watt_grid;  
 
-               var udpStatus = "CT connected";
+               var udpStatus = "CT &#x2705;";
                udpColor = 'green';
                 document.getElementById('RING_ID').className = "outerring_blink";
                if (myArray[4] == 1)
                { 
                  udpColor = 'red';
-                 udpStatus ="!no MARSTEK request!";
+                 udpStatus ="CT &#x274C";
                }
              
                document.getElementById('STATUS_UDP').innerHTML = udpStatus;

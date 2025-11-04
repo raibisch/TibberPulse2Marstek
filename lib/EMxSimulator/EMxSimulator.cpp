@@ -48,7 +48,7 @@ void EMxSimulator::setPowerData(double totalPower) {
   }
    
  
-  // for Shelly EM1
+  // unitl now ohnly simulation for Shelly-EM1 (sum phase)
   TotalPower.power_raw          = round2(totalPower);
   TotalPower.power_filterfactor = round2(pwrFilterValue);
   TotalPower.apparentPower      = round2(pwrFilterValue);
@@ -206,6 +206,7 @@ void EMxSimulator::parseUdpRPC() {
        } else {
         debug_printf("UDP-Rx: unknown request: %s\n", buffer);
        }
+       delay(1);
        _UdpRPC.endPacket();
     }
   }
@@ -242,7 +243,7 @@ void EMxSimulator::loop()
 }
 
 
-#define MAX_REQUEST_COUNT 10 
+
 /// @brief Test Timeout for UDP requests from MARSTEK
 /// @return 0=ok 1=no UDP request from MARSTEK
 bool EMxSimulator::getRequestTimeout()

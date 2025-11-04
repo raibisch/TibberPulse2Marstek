@@ -36,6 +36,7 @@
 #define EMX_UDP_PORT 1010 // Shelly 3M 120A
 #endif
 
+#define MAX_REQUEST_COUNT 20 
 
 class EMxSimulator
 {

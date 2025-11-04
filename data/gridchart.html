@@ -10,7 +10,7 @@
 </head>
 <body>
 <div class="outer_frame">
-    <h1>Grid and Battery Chart</h1>
+    <h2>Grid and Battery Power</h2>
         <!-- Create a canvas element to render the chart -->
         <canvas id="myChart"></canvas>
 </div>
@@ -21,7 +21,7 @@
 
 <script>
 const canvas = document.getElementById('myChart');
-canvas.height = 160;
+canvas.height = 140;
 const labels = [''];
 
 const data = {
@@ -29,17 +29,18 @@ const data = {
   datasets: [
     {
     id: 0,
-    borderWidth: 1,
+    borderWidth: 2,
+    pointRadius: 0,
     label: 'Grid[W]',
-    backgroundColor: 'blue',
-    borderColor: 'rgb(100,100,255)',
+    backgroundColor: 'rgb(120,120,255)',
+    borderColor:     'rgb(120,120,255)',
     data: [],
     tension: 0.3,
    },
    
    {
     id: 1,
-    borderWidth: 0,
+    borderWidth: 1,
     pointRadius: 0, 
     label: 'Bat[W]',
     backgroundColor: 'rgb(100, 200,100)',
@@ -89,9 +90,7 @@ function addData(chart, label, data) {
   chart.data.labels.push(label);
   chart.data.datasets.forEach((dataset) => 
   {
-   
      dataset.data.push(data);
-  
   });
   chart.update();
 }
@@ -118,10 +117,6 @@ function addData2(chart, label, data1,data2)
     else
     {
      dataset.data.push(data2);
-     //for (var i =i; i < dataset.data.length; i++)
-     //{
-     //  dataset.backgroundColor[i] = chartColors.red;
-     //}
     }
   });
   
@@ -145,15 +140,19 @@ watt_bat  = 0;
       // test
       // myArray = ["12:00","00","0","0"];
       counter++;
-      watt_grid = Math.floor(Math.random() * 10) + counter;
-      watt_bat    = Math.floor(Math.random() * 5) + counter;
-
+     
       //console.log(myArray);
      
       if (myArray[1] != null)
       {     
         watt_grid = myArray[1];  
         watt_bat  = myArray[6];       
+      }
+      else
+      {
+        // test simulation
+        watt_grid = Math.floor(Math.random() * 10) + counter;
+        watt_bat    = Math.floor(Math.random() * 5) + counter;
       }
 }
             
@@ -166,12 +165,9 @@ setInterval(function() {
   actTime = new Date();
   const newLabel =  actTime.getSeconds();
  
-  //const newVal_grid = Math.floor(Math.random() * 10) + counter;
-  //const newVal_bat  = Math.floor(Math.random() * 5)  + counter;
-
   const newVal_grid = watt_grid;
   const newVal_bat  = watt_bat;
-  //addData(myChart, newLabel, newVal_grid);
+ 
   addData2(myChart, newLabel, newVal_grid, newVal_bat);
 }, 1000);
         

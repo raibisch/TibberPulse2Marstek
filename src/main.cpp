@@ -87,7 +87,7 @@
  #define NEOPIXEL 21
 #endif
 
-const char* SYS_Version = "V 0.9.5";
+const char* SYS_Version = "V 1.0.0";
 const char* SYS_CompileTime =  __DATE__;
 static String  SYS_IP = "0.0.0.0";
 
@@ -258,14 +258,15 @@ class VarStore final: public FileVarStore
    String varSML_s_password = "";
 #endif
 #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
-   uint16_t varEMX_i_port         = 2223;
-   float    varEMX_f_filterfactor = 1.0;
+   uint16_t varEMX_i_port;
+   float    varEMX_f_filterfactor;
    
 #endif
 
 #ifdef MARSTEK_API
     int varMARSTEKAPI_i_port;
-    String varMARSTEKAPI_s_url  = "";
+    String varMARSTEKAPI_s_url;
+    uint varMARSTEKAPI_i_pollsec;
 #endif
 
 
@@ -282,16 +283,18 @@ class VarStore final: public FileVarStore
      varSML_s_user         = GetVarString(GETVARNAME(varSML_s_user));
 #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
      varEMX_i_port         = (uint16_t)GetVarInt(GETVARNAME(varEMX_i_port),2223);
-     varEMX_f_filterfactor = GetVarFloat(GETVARNAME(varEMX_f_filterfactor), 1.0); 
+     varEMX_f_filterfactor = GetVarFloat(GETVARNAME(varEMX_f_filterfactor), 0.8); 
      shellyEMx.setFilterFactor(varEMX_f_filterfactor);
+
 #endif
 #endif
 
 #ifdef MARSTEK_API
      varMARSTEKAPI_s_url     = GetVarString(GETVARNAME(varMARSTEKAPI_s_url), "192.168.2.95");
      varMARSTEKAPI_i_port    = GetVarInt(GETVARNAME(varMARSTEKAPI_i_port),30000);
+     varMARSTEKAPI_i_pollsec = GetVarInt(GETVARNAME(varMARSTEKAPI_i_pollsec),20);
+     marstek.setPollRateSec(varMARSTEKAPI_i_pollsec);
 #endif
-   
    }
 };
 
@@ -402,7 +405,6 @@ bool initWiFi()
     WiFi.setTxPower(WIFI_POWER_MINUS_1dBm); // decrease power over serial TTY-Adapter
     #endif
     int i = 0;
-    delay(200);
     debug_printf("SSID:%s connecting\r\n", varStore.varWIFI_s_ssid.c_str());
     ///debug_printf("Passwort:%s\r\n", varStore.varWIFI_s_Password);
     while (!WiFi.isConnected())
@@ -410,14 +412,12 @@ bool initWiFi()
         debug_print(".");
         blinkLED();
         i++;  
-        delay(400);
-        if (i > 20)
+        delay(200);
+        if (i > 40)
         {
           ESP.restart();
         }
-    }
-    delay(300);
-      
+    }    
     SYS_IP = WiFi.localIP().toString();
     debug_println("CONNECTED!");
     #ifdef ESP32
@@ -440,10 +440,9 @@ void testWiFiReconnect()
   if ((varStore.varWIFI_s_mode == "STA") && (WiFi.status() != WL_CONNECTED))
     {
      debug_println("Reconnecting to WiFi...");
-     delay(300);
      if (!WiFi.reconnect())
      {
-      delay(200);
+      delay(500);
       ESP.restart();
      } 
    }
@@ -580,26 +579,26 @@ void initWebServer()
     //debug_println(s);
     }
                                                                  // Index:
-    sFetch = ntpclient.getTimeString();                         // 0 = Time: 00:00
+    sFetch = ntpclient.getTimeString();            // 0 = Time: 00:00
   #if (defined SML_TIBBER)
     sFetch += ',';
-    sFetch += smldecoder.getWatt();            // 1
+    sFetch += smldecoder.getWatt();                // 1 = Grid Power [W]
     sFetch += ',';
-    sFetch += smldecoder.getInputkWh();        // 2
+    sFetch += smldecoder.getInputkWh();            // 2 = Grid Energy-In [kWh]
     sFetch += ',';
-    sFetch += smldecoder.getOutputkWh();       // 3
+    sFetch += smldecoder.getOutputkWh();           // 3 = Grid Energy-Out[kWh]
   #endif
   #ifdef EM1_UDP_SIMULATION
     sFetch += ',';
-    sFetch += (uint)shellyEMx.getRequestTimeout();  // 4
+    sFetch += (uint)shellyEMx.getRequestTimeout(); // 4 = MARSTEK EM1 simulation timeout
   #else
     sFetch += ",0";
   #endif
   #ifdef MARSTEK_API
     sFetch += ',';
-    sFetch += marstek.getSOC();               // 5
+    sFetch += marstek.getSOC();                    // 5 = MARSTEK Bat SOC [%]
      sFetch += ',';
-    sFetch += marstek.getOnGridPower();       // 6 
+    sFetch += marstek.getOnGridPower();            // 6 = MARSTEK Bat Power +/- [W]
   #endif
     // include from other libs xxx.getCSVFetch()
     sFetch += ",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";     // for more values  
@@ -673,7 +672,7 @@ void setup()
    shellyEMx.init(varStore.varEMX_i_port, varStore.varEMX_f_filterfactor);
 #endif
 #ifdef MARSTEK_API
-   marstek.init(varStore.varMARSTEKAPI_s_url, varStore.varMARSTEKAPI_i_port);
+   marstek.init(varStore.varMARSTEKAPI_s_url, varStore.varMARSTEKAPI_i_port,varStore.varMARSTEKAPI_i_pollsec);
 #endif
  
 }
@@ -683,6 +682,8 @@ void setup()
 ////////////////////////////////////////////////
 void loop() 
 {
+
+  
    if (millis() - TimerSlowDuration > TimerSlow) 
    {
 
@@ -718,13 +719,11 @@ void loop()
   if (millis() - TimerFastDuration > TimerFast)
   {
     TimerFast = millis();
-
 #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
-    if (shellyEMx.getRequestTimeout())
-    {
+    if (shellyEMx.getRequestTimeout()){
       setLED(1);
-      //delay(1000);
-      //ESP.restart();
+      delay (1000);
+      ESP.restart();
     }
     else
 #endif
@@ -734,14 +733,11 @@ void loop()
   } // TimerFastDuration
 
 #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
-    shellyEMx.loop();
+  shellyEMx.loop();
 #endif
-
 #ifdef MARSTEK_API 
   marstek.loop();
 #endif
-
-yield();
-
+ delay(1);
 }
 

@@ -44,6 +44,8 @@
 #define REMOTE_TX_PORT 30000
 #define LOCAL_RX_PORT  30000
 
+#define MAX_REQUEST_COUNT 20 
+
 class MarstekAPI
 {
   private:  
@@ -60,8 +62,8 @@ class MarstekAPI
 #endif
 
    // wait for UDP answer (Rx) before resending
-   const unsigned long   _max_rx_wait = 30000; // 30sec
-   unsigned long         _timer_rx_wait = 0;
+   unsigned long   _pollRateMsec = 30000; // 30sec
+   uint16_t udpRequestCount = 0;
     
    String serJsonResponse;
    String serJsonRequest;
@@ -98,12 +100,12 @@ class MarstekAPI
   public:
     MarstekAPI() {};
     ~MarstekAPI() {};
-   bool init(String ip, uint16_t port);
-   //inline void rxloop() { getUDPData();};
+   bool init(String ip, uint16_t port, uint16_t pollRateSec);
    void loop();
    inline int getSOC() {return data.batSoc;};
    inline int getOnGridPower() {return data.onGridPower;};
-
+   inline void setPollRateSec(uint16_t pollRateSec) {_pollRateMsec = pollRateSec * (unsigned long)1000;};
+   bool getRequestTimeout();
 };
 
 
