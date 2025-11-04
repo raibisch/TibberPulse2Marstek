@@ -1,8 +1,16 @@
-# 'Tibber-Pulse-Bridge' --> 'Marstek-Venus' 
+# Energy meter simulation for 'Tibber-Pulse' to 'Marstek'
 
-Use your 'Tibber-Pulse-Bridge' Adapter in 'self-consumption mode' for 'MARSTEK-Venus' energy storage system.
+#### Use your **'Tibber-Pulse-Bridge'** Adapter as energy meter simulation for 'self-consumption' mode of **'MARSTEK'** energy storage systems 
 
-![screenshot](pict/tibber_pulse_bridge.png) **<-->** ![screenshot](pict/marstek_app.png)
+![screenshot](pict/tibber_pulse_bridge.png)
+Tibber <-HTTP-connection-> Tibber2Marstek
+![screenshot](pict/start_page.png)
+Tibber2Marstek <-UDP-connection--> MARSTEK
+![screenshot](pict/marstek_app.png)
+
+### *NEW:* implementation of 'MARSTEK local API'
+The MARSTEK API-implementation is beta, because Marstek has still a bug in there implementation --> after some hours we get no responce from the MARSTEK device (testet with VENUS-E V3 Firmware V139). Until now the app reads the Bat-SOC (state of charge) and actual Bat-Power.
+ ...but this bug is not related to the base function 'Shelly Emulation'.
 
 This solution is running on a ESP8255, ESP32, ESP32-S2 or -S3 Microcontroller. 
 * You need no additional hardware interface  ... works without any external adapter.
@@ -23,15 +31,15 @@ This is a minimal implementation to communicate with the MARSTEK System over UDP
 It is (until now) not a full implementaton of all Shelly RPC protocols: only 'EM1.GetStatus'...NO HTTP, NO Webservice, No MQTT.
 (look at  https://github.com/Raibisch/Energy2Shelly_ESP for a full implementation..but with no Web-App pages)
 
-there is a CSV based remote procedure call response
-``` http:your-ip/fetch  ```  response:  ```12:55,-444,1,0,0,0,0,0``` (time,power,responseWatchdog)
-
+there is a CSV based remote procedure call response for for data access on own applications (e.g. homeautomation like home-assistant)
+``` http:your-ip/fetch  ```  response:  ```12:55,-444,1111.0,2222.0,0,33,444``` (time,grid_power,grid_kwh_in,grid_kwh_out,responseWatchdog,bat_soc,bat_power)
+ ...could be expanded to JSON for future versions (give me a response if you need this).
 
 #### Remark for the program implementation:
 The program is based on the libs 'SMLDecode' and 'EMxSimulator' these could be used stand-alone for own implementations. for the Web-App I use some additional libs from my "AsyncWeb" framework (in 'lib' folder). These Web-App Framework is used for my other projects and needs a 'data' folder for storing the Web-pages and the config-File.
-...why using SPIFFS and not LITTLEFS: SPIFFS has still a smaller code footprint an for my application no backdraw (but could be changed in future)
-...to compilicated: use  'SMLDecode' and 'EMxSimulator' for your own implementation (I will add an minimal console based example in the 'example' folder)
-...no ESP: try to compile to your platform
+ ...why using SPIFFS and not LITTLEFS: SPIFFS has still a smaller code footprint an for my application no backdraw (but could be changed in future)
+ ...to compilicated: use  'SMLDecode' and 'EMxSimulator' for your own implementation (I will add an minimal console based example in the 'example' folder)
+ ...no ESP: try to compile to your platform
 
 #### Todo (possible Extentions)
 * MARSTEK open API (alpha Version is included in '/lib/MastekAPI' for first testing)
