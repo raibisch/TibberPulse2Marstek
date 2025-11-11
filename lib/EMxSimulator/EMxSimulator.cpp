@@ -29,31 +29,61 @@ double EMxSimulator::round2(double value) {
   return ivalue / 100.0;
   }
   
-  
+
+static double powerOld=0;
 /// @brief set Power (Watt)
 /// @param totalPower 
 void EMxSimulator::setPowerData(double totalPower) {
   // for Shelly EM1
-  
-  // reduce amplification for small values
-  double pwrFilterValue = totalPower;
-  if ((abs(totalPower) > 5.0) && (abs(totalPower) < 100.0))
+
+  double powerFilterValue = totalPower;
+
+  /* alternative Filter --> auch nicht besser
+  double powerFilterValue = totalPower;
+  if (abs(totalPower) >= 10)
   {
-     pwrFilterValue = totalPower * filterFactor;
+     powerFilterValue = totalPower -(powerOld*filterFactor);
+  }
+  powerOld = powerFilterValue;
+  */
+
+  
+  // reduce amplification 
+  if (abs(totalPower) > 500)
+  {
+     powerFilterValue = totalPower* filterFactor * 0.5;
   }
   else
-  if (abs(totalPower) <= 5.0)
+  if ((abs(totalPower*filterFactor) >= 10))
   {
-    pwrFilterValue = -0.1;
+     powerFilterValue = totalPower * filterFactor;
   }
-   
+  else
+  {
+    if (totalPower > +10)
+    {
+      powerFilterValue = 11; // <= 10 regelt Marstek nicht mehr aus !
+    }
+    else
+    if (totalPower < -10)
+    {
+      powerFilterValue = -11;
+    }
+    else
+    {
+      powerFilterValue = totalPower;
+    }
+  }
+
+  powerOld = totalPower;
+  
  
-  // unitl now ohnly simulation for Shelly-EM1 (sum phase)
+  // unitl now only simulation for Shelly-EM1 (sum phase)
   TotalPower.power_raw          = round2(totalPower);
-  TotalPower.power_filterfactor = round2(pwrFilterValue);
-  TotalPower.apparentPower      = round2(pwrFilterValue);
+  TotalPower.power_filterfactor = round2(powerFilterValue);
+  TotalPower.apparentPower      = round2(powerFilterValue);
   TotalPower.voltage            = defaultVoltage;
-  TotalPower.current            = round2(pwrFilterValue / double(defaultVoltage));
+  TotalPower.current            = round2(powerFilterValue / double(defaultVoltage));
   TotalPower.frequency          = defaultFrequency;
   TotalPower.powerFactor        = defaultPowerFactor;
   
@@ -148,10 +178,12 @@ void EMxSimulator::rpcWrapper() {
 
 /// @brief parse input from UDP
 /// beta version: only pharse EM1.GetStatus (shelly PRO EM1-50)
-void EMxSimulator::parseUdpRPC() {
+void EMxSimulator::parseUdpRPC() 
+{
   uint8_t buffer[1024];
   int packetSize = _UdpRPC.parsePacket();
-  if (packetSize) {
+  if (packetSize) 
+  {
     JsonDocument json;
     // old:
     //int rSize = _UdpRPC.read(buffer, 1024);

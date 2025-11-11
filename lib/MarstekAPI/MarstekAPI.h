@@ -41,18 +41,15 @@
 #define debug_println(...)
 #endif
 
-#define REMOTE_TX_PORT 30000
-#define LOCAL_RX_PORT  30000
-
-#define MAX_REQUEST_COUNT 20 
+#define MARSTEK_MAX_REQUEST_COUNT 20 
 
 class MarstekAPI
 {
   private:  
- 
+   
    WiFiUDP    _UdpRPC;
-   uint16_t  _remotePort = REMOTE_TX_PORT; 
-   uint16_t  _localRxPort = LOCAL_RX_PORT;
+   uint16_t        _remotePort  = 30000; 
+   const uint16_t  _localRxPort = 30000;
    IPAddress _remoteIPaddr;
 #ifdef ESP32
 #define UDPPRINT print

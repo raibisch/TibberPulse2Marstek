@@ -411,11 +411,13 @@ void MarstekAPI::loop()
     default:
       break;
     }
+    delay(220);
+    //getUDPData();
    }
-   else
-   {
-    getUDPData();
-	delay(1);;
+   //else
+   { 
+	getUDPData();
+	delay(1); 
    }
 }
 
@@ -425,5 +427,5 @@ void MarstekAPI::loop()
 bool MarstekAPI::getRequestTimeout()
 {
   //debug_printf("[EMx] udpRequestCount:%d\r\n", udpRequestCount);
-  {if (udpRequestCount > MAX_REQUEST_COUNT){return true;}else{return false;}}
+  {if (udpRequestCount > MARSTEK_MAX_REQUEST_COUNT){return true;}else{return false;}}
 }

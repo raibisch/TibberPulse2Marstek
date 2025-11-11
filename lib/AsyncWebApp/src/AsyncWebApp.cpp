@@ -26,34 +26,15 @@ include this script im Webpage 'log.html' or include it in PROG_MEM definition o
 //
 void AsyncWebAppClass::begin(AsyncWebServer *server)
 {
-    _server = server;
+   _server = server;
    
-  /* template from OTA
-  // myFS (DATA) Formular-Seite
-
-  _server->on("/ota.html",          HTTP_GET, [](AsyncWebServerRequest *request)
-  {
-     request->send(myFS, "/ota.html", String(), false, NULL);
-  });
-  */
-  
-  //* lösung für setHtmlVar suchen ----------------- !!!
-  //Route for root / web page
-  /// das geht evt schon so (Frage was ist mit den Aufrufen innerhalb von parseHtmlTemplate ?)
-  // oder mit construktor den pointer auf parseHtmlTemplate übergeben und im main definieren ?
-  // oder Class ableiten und "begin" überschreiben !! ..> vieleicht die eleganteste Lösung ?
-  /*
-  _server->on("/",          HTTP_GET, [](AsyncWebServerRequest *request)
-  {
-   request->send(myFS, "/index.html", String(), false, AsyncWebAppClass::parseHtmlTemplate);
-  });
-  */
- 
   // setup.html GET
   _server->on("/setup.html",          HTTP_GET, [](AsyncWebServerRequest *request)
   {
    request->send(myFS, "/setup.html", "text/html", false);
   });
+  
+  
 
   // config.txt GET
   _server->on("/config.txt", HTTP_GET, [](AsyncWebServerRequest *request){

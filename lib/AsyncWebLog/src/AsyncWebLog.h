@@ -44,7 +44,6 @@
 // by JG: point to Webpage in SPIFF
 #define LOG_URL "/log.html"
 
-
 class AsyncWebLogClass : public Print
 {
 public:

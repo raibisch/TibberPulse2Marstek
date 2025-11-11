@@ -1,10 +1,10 @@
 #include <Arduino.h>
-
 // Build in libs
 #include <Esp.h>
 #include <FS.h>
-                 
-
+#include <Preferences.h>     
+#include <base64.h>     
+           
 #ifdef ESP32
   #include <SPIFFS.h> 
   #include "soc/soc.h"
@@ -26,8 +26,6 @@
 #endif
                  
 #include <ESPAsyncWebServer.h>         
-     
-#include <base64.h>     
 
 #ifdef DISPLAY_OLED
 #include <U8g2lib.h>
@@ -41,10 +39,12 @@
 #include "ESP32ntp.h"
 #include "XPString.h"
 #include "AsyncWebApp.h"
-// my libs for actual program
+
+// mylibs for actual program
 #include "SMLdecode.h"
 #include "EMxSimulator.h"
 #include "MarstekAPI.h"
+#include "EcoTrackSimulator.h"
 
 // special for S2 and S4
 #if defined ESP_S2_MINI || ESP_S3_ZERO
@@ -87,6 +87,12 @@
  #define NEOPIXEL 21
 #endif
 
+
+#ifdef ESP32_S3_DEVKIT
+ #pragma message("Info : ESP32_S3_DEVKIT")
+ //#define NEOPIXEL 48
+#endif
+
 const char* SYS_Version = "V 1.0.0";
 const char* SYS_CompileTime =  __DATE__;
 static String  SYS_IP = "0.0.0.0";
@@ -104,12 +110,18 @@ SMLdecode smldecoder;
 EMxSimulator shellyEMx;
 #endif
 
+#ifdef ECOTRACK_SIMULATION
+EcoTrackSimulator ecotrak;
+#endif
+
 #ifdef MARSTEK_API
 MarstekAPI marstek;
 #endif
 
+
 // fetch String;
-static String sFetch;
+String sFetch;
+uint timeout_count = 0;
 
 // ntp client
 const char* TimeServerLocal = "192.168.2.1";
@@ -119,47 +131,42 @@ ESP32ntp ntpclient;
 bool isSTA_MODE = true;  // false = AP-Mode
 
 
-const unsigned long   TimerFastDuration = 300;
+const unsigned long   TimerFastDuration = 200;
 unsigned long   TimerFast = 0;
-const unsigned long   TimerSlowDuration   = 1100;   
+const unsigned long   TimerSlowDuration   = 1000;   
 unsigned long   TimerSlow = 0;     
 
-#ifdef ESP32_S3_ZERO
+#if defined ESP32_S3_ZERO || defined ESP32_S3_DEVKIT
 static char neopixel_color = 'w';
 #define  setcolor(...) neopixel_color = __VA_ARGS__
 #else
 #define setcolor(...)
 #endif
 
-
 /// @brief  set builtin LED
 /// @param i = HIGH / LOW
 void setLED(uint8_t i)
 {
-#ifndef ESP32_S3_ZERO
-#ifndef M5_COREINK
- digitalWrite(LED_GPIO, i);
-#endif
-#else
-  if (i==0)
-  {
+#if defined ESP32_S3_ZERO || defined ESP32_S3_DEVKIT
+if (i==0)
+ {
     neopixelWrite(NEOPIXEL,0,0,0); // off
-  }
-  else
-  {
+ }
+ else
+ {
     switch (neopixel_color)
     {
     case 'r': 
-      neopixelWrite(NEOPIXEL,1,0,0); // red
+      neopixelWrite(NEOPIXEL,2,0,0); // red
       break;
     case 'g':
-      neopixelWrite(NEOPIXEL,0,1,0); // green
+      neopixelWrite(NEOPIXEL,0,2,0); // green
       break;
     case 'b':
-      neopixelWrite(NEOPIXEL,0,0,1); // blue
+      neopixelWrite(NEOPIXEL,0,0,2); // blue
       break;
     case 'y':
-       neopixelWrite(NEOPIXEL,2,1,0); // yellow
+       neopixelWrite(NEOPIXEL,1,1,0); // yellow
       break;
     case 'w':
       neopixelWrite(NEOPIXEL,1,1,1); // white
@@ -167,63 +174,36 @@ void setLED(uint8_t i)
     default:
        break;
     }
-  }
+ }
+#else
+ digitalWrite(LED_GPIO, i);
 #endif
 }
 
+
 uint8_t blnk=0;
+/// @brief  blink LED
 static void blinkLED()
 {
   blnk = !blnk;
   setLED(blnk);
 }
 
-#if (defined ESP_S3_SERO)
-static int c4 = 0;
-inline void blinkLED()
-{
-  // useless color change ;-)
-   c4++;
-   if (c4 > 4) {c4 = 0;}
-   switch (c4)
-  {
-    case 0: 
-      neopixel_color = 'r';
-      break;
-    case 1:
-      neopixel_color = 'g';
-      break;
-    case 2:
-      neopixel_color = 'b';
-      break;
-    case 3:
-      neopixel_color = 'y';
-      break;
-    case '4':
-      neopixel_color = 'w';
-      break;
-    default:
-       break;
-    }
-  blnk = !blnk;
-  setLED(blnk);
-
-}
-#endif
 ////////////////////////////////////////////
 /// @brief init builtin LED
 ////////////////////////////////////////////
 inline void initLED()
 {
- #ifndef ESP32_S3_ZERO
+ #if defined ESP32_S3_ZERO || defined ESP32_S3_DEVKIT
+  neopixel_color='w'; 
+#else
   pinMode(LED_GPIO, OUTPUT);
   digitalWrite(LED_GPIO, HIGH);
-#else
-  neopixel_color='w';
 #endif
   setcolor('w'); //white
   setLED(1);
 }
+
 
 void inline initSPIFFS()
 {
@@ -259,8 +239,7 @@ class VarStore final: public FileVarStore
 #endif
 #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
    uint16_t varEMX_i_port;
-   float    varEMX_f_filterfactor;
-   
+   float    varEMX_f_filterfactor; 
 #endif
 
 #ifdef MARSTEK_API
@@ -285,7 +264,6 @@ class VarStore final: public FileVarStore
      varEMX_i_port         = (uint16_t)GetVarInt(GETVARNAME(varEMX_i_port),2223);
      varEMX_f_filterfactor = GetVarFloat(GETVARNAME(varEMX_f_filterfactor), 0.8); 
      shellyEMx.setFilterFactor(varEMX_f_filterfactor);
-
 #endif
 #endif
 
@@ -448,6 +426,56 @@ void testWiFiReconnect()
    }
 }
 
+
+/*
+void initEcoTrackerSim()
+{
+  // Set up mDNS responder
+  String baseName = "ecoctracker-" + WiFi.macAddress();
+  if (!MDNS.begin(baseName.c_str()))
+  {
+    debug_println("Error setting up MDNS responder!");
+  }
+
+#ifdef ESP32
+  MDNS.addService("_http", "_tcp", 80);
+  MDNS.addService("_everhome","_tcp",80);
+  //wird nicht gebraucht !
+  //mdns_txt_item_t serviceTxtData[4] = 
+  //{
+  //  { "fw_id", SYS_Version},
+  //  { "arch", "esp8266" },
+  //  { "id", baseName.c_str() }
+  //};
+  
+  mdns_service_instance_name_set("_http", "_tcp", baseName.c_str());
+  //mdns_service_txt_set("_http", "_tcp", serviceTxtData, 4);
+
+  mdns_service_instance_name_set("_everhome", "_tcp", baseName.c_str());
+  //mdns_service_txt_set("_everhome", "_tcp", serviceTxtData, 4);
+
+#else
+  hMDNSService = MDNS.addService(0, "_http", "_tcp", 80);
+  hMDNSService2 = MDNS.addService(0, "_everhome", "_tcp", 80);
+  if (hMDNSService) 
+  {
+    MDNS.setServiceName(hMDNSService, baseName.c_str());
+    MDNS.addServiceTxt(hMDNSService, "fw_id", SYS_Version);
+    MDNS.addServiceTxt(hMDNSService, "arch", "esp8266");
+    MDNS.addServiceTxt(hMDNSService, "id", baseName.c_str());
+  }
+  if (hMDNSService2) 
+  {
+    MDNS.setServiceName(hMDNSService2, baseName.c_str());
+    MDNS.addServiceTxt(hMDNSService2, "fw_id", SYS_Version);
+    MDNS.addServiceTxt(hMDNSService2, "arch", "esp8266");
+    MDNS.addServiceTxt(hMDNSService2, "id", baseName.c_str());
+  }
+#endif
+  debug_println("mDNS responder started");
+}
+*/
+
 #ifdef WEB_APP
 // -------------------- WEBSERVER -------------------------------------------
 // --------------------------------------------------------------------------
@@ -499,6 +527,9 @@ String setHtmlVar(const String& var)
      sFetch += String(ESP.getFreeSketchSpace());
      sFetch += "\nAppFreq Mhz:";
      sFetch += String(getApbFrequency()/ 1000000);
+
+     sFetch += "\nTimeOutCount:";
+     sFetch += timeout_count;;
   #else
      sFetch += "\nFreeHeap   :";
      sFetch += String(ESP.getFreeHeap());
@@ -512,6 +543,7 @@ String setHtmlVar(const String& var)
  
 }
 
+
 void notFound(AsyncWebServerRequest *request) 
 {
     request->send(404, "text/plain", "Not found");
@@ -520,6 +552,19 @@ void notFound(AsyncWebServerRequest *request)
 void initWebServer()
 { 
  
+
+#ifdef ECOTRACK_SIMULATION
+  
+   //Route json request
+  webserver.on("/v1/json",          HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+    String s = ecotrak.buildJsonRequest();
+    AsyncWebLog.printf("[ECOTR]-Tx-> Power:%d\r\n", smldecoder.getWatt());
+ 
+    request->send(200, "application/json", s);
+   
+  });
+#endif
 
   //Route for root / web page
   webserver.on("/",          HTTP_GET, [](AsyncWebServerRequest *request)
@@ -588,20 +633,28 @@ void initWebServer()
     sFetch += ',';
     sFetch += smldecoder.getOutputkWh();           // 3 = Grid Energy-Out[kWh]
   #endif
+   sFetch += ',';
+  #if defined EM1_UDP_SIMULATION || defined ECOTRACK_SIMULATION
+   uint tmp_timeout = 0;
   #ifdef EM1_UDP_SIMULATION
-    sFetch += ',';
-    sFetch += (uint)shellyEMx.getRequestTimeout(); // 4 = MARSTEK EM1 simulation timeout
+   if ((uint)shellyEMx.getRequestTimeout() > 0)
+   {tmp_timeout = 1;}
+  #endif
+  #ifdef ECOTRACK_SIMULATION
+   if ((uint)ecotrak.getRequestTimeout() > 0 && tmp_timeout > 0)
+   {tmp_timeout++;}
+  #endif
+    sFetch += tmp_timeout;
   #else
-    sFetch += ",0";
+    sFetch += "0";
   #endif
   #ifdef MARSTEK_API
     sFetch += ',';
     sFetch += marstek.getSOC();                    // 5 = MARSTEK Bat SOC [%]
-     sFetch += ',';
+    sFetch += ',';
     sFetch += marstek.getOnGridPower();            // 6 = MARSTEK Bat Power +/- [W]
   #endif
-    // include from other libs xxx.getCSVFetch()
-    sFetch += ",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0";     // for more values  
+    sFetch += ",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,end";     // for more values  
   
     request->send(200, "text/plain", sFetch);
     //debug_println("server.on /fetch: "+ s);
@@ -634,6 +687,7 @@ void initWebServer()
   webserver.begin();
 }
 #endif
+
 
 ////////////////////////////////////////////////////
 /// @brief setup
@@ -674,8 +728,14 @@ void setup()
 #ifdef MARSTEK_API
    marstek.init(varStore.varMARSTEKAPI_s_url, varStore.varMARSTEKAPI_i_port,varStore.varMARSTEKAPI_i_pollsec);
 #endif
- 
+
+#ifdef ECOTRACK_SIMULATION
+   ecotrak.begin();
+#endif
 }
+
+
+
 
 ////////////////////////////////////////////////
 /// @brief loop
@@ -711,33 +771,41 @@ void loop()
 #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
     shellyEMx.setData_AllPhase(smldecoder.getWatt(),smldecoder.getInputkWh(),smldecoder.getOutputkWh());
 #endif
-#endif 
-  } //TimerSlowDuration
+#ifdef ECOTRACK_SIMULATION
+    ecotrak.setData_AllPhase(smldecoder.getWatt(),smldecoder.getInputkWh(),smldecoder.getOutputkWh());
+#endif
 
-  // fast blink
-  //static int c4 = 0;
+#endif 
+
+  }//TimerSlowDuration
+
+  // TimerFastDuration
   if (millis() - TimerFastDuration > TimerFast)
   {
     TimerFast = millis();
 #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
-    if (shellyEMx.getRequestTimeout()){
+    if (shellyEMx.getRequestTimeout())
+    {
       setLED(1);
-      delay (1000);
-      ESP.restart();
+      timeout_count++;
+      delay (500);
+      //ESP.restart();
     }
     else
 #endif
     {
-      blinkLED(); 
-    }    
+      blinkLED();
+    }
+ 
   } // TimerFastDuration
 
-#if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
-  shellyEMx.loop();
+
+ #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
+    shellyEMx.loop();
+ #endif
+  #ifdef MARSTEK_API 
+    marstek.loop();
 #endif
-#ifdef MARSTEK_API 
-  marstek.loop();
-#endif
- delay(1);
+delay(1);
 }
 

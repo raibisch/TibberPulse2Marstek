@@ -375,8 +375,6 @@ bool SMLdecode::read()
   debug_printf("[SML] Power:%d  1.8.0:%05.3f  2.8.0:%05.3f\r\n", _watt, _inputkWh, _outputkWh);
   /// ------------ old -------------------------
   */
-
-
   return ret;
 }
 #endif
