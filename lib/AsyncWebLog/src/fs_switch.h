@@ -7,7 +7,9 @@
 #else
 #pragma message("Info : USE 'SPIFFS' Filesystem")
 #ifdef ESP32
+//#ifndef ESP32_C3
 #include <SPIFFS.h>
+//#endif
 #endif
 #define myFS SPIFFS
 #endif 

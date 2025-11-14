@@ -3,7 +3,9 @@
 #include "Arduino.h"
 
 #ifdef ESP32
+#ifndef ESP32_C3
   #include <SPIFFS.h> 
+#endif
   #include <HTTPClient.h>
   #include <AsyncTCP.h>
   #include <ESPmDNS.h>
@@ -48,7 +50,7 @@ public:
 
 #ifdef WEB_APP
     // use existing AsyncWebserver
-    void begin();
+    void begin(float filterfactor);
     bool setData_AllPhase(double watt, double grindIn, double grindOut);
     String buildJsonRequest();
     bool getRequestTimeout();
@@ -63,6 +65,7 @@ private:
     uint32_t _WhIn   = 0; // Achtung hier Wh nicht kWh !!
     uint32_t _WhOut  = 0;
     uint16_t _requestCount = 0; 
+    double _filterFactor;
 
    
 };

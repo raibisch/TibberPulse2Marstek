@@ -17,7 +17,6 @@
 #define debug_println(...)
 #endif
 
-
 /// @brief  fix for Marstek (needs values with decimal numbers)
 /// @param value 
 /// @return 
@@ -47,7 +46,14 @@ void EMxSimulator::setPowerData(double totalPower) {
   powerOld = powerFilterValue;
   */
 
-  
+
+  double tmp= totalPower - powerOld;
+  if (tmp> 100) 
+  {
+     powerFilterValue = totalPower -(tmp / 2);  
+  }
+
+  /*
   // reduce amplification 
   if (abs(totalPower) > 500)
   {
@@ -74,6 +80,7 @@ void EMxSimulator::setPowerData(double totalPower) {
       powerFilterValue = totalPower;
     }
   }
+  */
 
   powerOld = totalPower;
   
@@ -98,7 +105,10 @@ void EMxSimulator::setPowerData(double totalPower) {
     PhasePower[i].frequency            = defaultFrequency;
   }
   */
+ if (udpRequestCount != 0xFFFF)
+ {
   udpRequestCount++;
+ }
  
   //debug_printf("   %.1f[W]\r\n",totalPower);
 }
@@ -281,7 +291,7 @@ void EMxSimulator::loop()
 bool EMxSimulator::getRequestTimeout()
 {
   //debug_printf("[EMx] udpRequestCount:%d\r\n", udpRequestCount);
-  {if (udpRequestCount > MAX_REQUEST_COUNT){return true;}else{return false;}}
+  {if ((udpRequestCount > MAX_REQUEST_COUNT) && (udpRequestCount != 0xFFFF)){return true;}else{return false;}}
 }
 
 

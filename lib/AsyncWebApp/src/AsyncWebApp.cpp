@@ -1,6 +1,5 @@
 #include "AsyncWebApp.h"
 
-
 #ifdef DEBUG_PRINT
 #define debug_begin(...) Serial.begin(__VA_ARGS__);
 #define debug_print(...) Serial.print(__VA_ARGS__);

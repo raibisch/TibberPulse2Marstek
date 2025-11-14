@@ -13,7 +13,8 @@
  String EcoTrackSimulator::buildJsonRequest()
  {
     _requestCount = 0;
-    debug_printf("Request: %s\r\n",JSON_URL);
+    debug_printf      ("[MARS]<->[ECOT] v1/json {\"power\":%d... \r\n", _watt);
+    AsyncWebLog.printf("[MARS]<->[ECOT] v1/json {\"power\":%d... \r\n", _watt);
     // {\"power\":" + s(0cpwr) + ",\"powerAvg\":" + s(0cpwr) + ",\"energyCounterIn\":" + s(0sml[2]*1000) + ",\"energyCounterOut\":" + s(0sml[3]*1000) + "}"
     String sFetch = "{\"power\":";
     sFetch += _watt;
@@ -35,9 +36,40 @@
 /// @return true
 bool EcoTrackSimulator::setData_AllPhase(double watt, double kwhIn, double kwhOut)
 { 
-  _watt = watt;
-  _watt_avg = (watt + _watt_old) / 2;
-  _watt_old = watt;
+
+  double powerFilterValue = watt;
+
+  // reduce amplification 
+  if (abs(watt) > 500)
+  {
+     powerFilterValue = watt * 0.9;
+  }
+  /**
+  else
+  if ((abs(watt*_filterFactor) >= 10))
+  {
+     powerFilterValue = watt * _filterFactor;
+  }
+  else
+  {
+    if (watt > +10)
+    {
+      powerFilterValue = 11; // <= 10 regelt Marstek nicht mehr aus !
+    }
+    else
+    if (watt < -10)
+    {
+      powerFilterValue = -11;
+    }
+    else
+    {
+      powerFilterValue = watt;
+    }
+  }*/
+
+  _watt = (uint)powerFilterValue;
+  _watt_avg = (uint)(powerFilterValue + _watt_old) / 2;
+  _watt_old = (uint)powerFilterValue;
 
   _WhIn = (uint)(kwhIn  *1000);
   _WhOut= (uint)(kwhOut *1000); 
@@ -50,16 +82,17 @@ bool EcoTrackSimulator::setData_AllPhase(double watt, double kwhIn, double kwhOu
 bool EcoTrackSimulator::getRequestTimeout()
 {
   //debug_printf("[EMx] udpRequestCount:%d\r\n", udpRequestCount);
-  {if (_requestCount > 20){return true;}else{return false;}}
+  {if (_requestCount > 50){return true;}else{return false;}}
 }
 
 
 /// @brief init ( call in setup() )
 /// set up mDNS for Marstek search for EcoTracker
-void EcoTrackSimulator::begin()
+void EcoTrackSimulator::begin(float filterFactor)
 {
+  _filterFactor = filterFactor;
   // Set up mDNS responder
-  String baseName = "ecoctracker-" + WiFi.macAddress();
+  String baseName = "ecoctracker-01";
   if (!MDNS.begin(baseName.c_str()))
   {
     debug_println("Error setting up MDNS responder!");

@@ -4,7 +4,9 @@
 #include <Arduino.h>
 
 #ifdef ESP32
+#ifndef ESP32_C3
   #include <SPIFFS.h> 
+#endif
   #include <HTTPClient.h>
   #include <AsyncTCP.h>
   //#include <ESPmDNS.h>
@@ -42,6 +44,7 @@
 #endif
 
 #define MARSTEK_MAX_REQUEST_COUNT 20 
+#define UDP_BROADCAST_ADDR  "192.168.2.255"
 
 class MarstekAPI
 {
@@ -51,6 +54,7 @@ class MarstekAPI
    uint16_t        _remotePort  = 30000; 
    const uint16_t  _localRxPort = 30000;
    IPAddress _remoteIPaddr;
+   bool bBraodcast_toggle = false;
 #ifdef ESP32
 #define UDPPRINT print
 #else
@@ -67,7 +71,7 @@ class MarstekAPI
    // Helper Functions
    //JsonVariant resolveJsonPath(JsonVariant variant, const char *path);
    void getUDPData();
-   void sendUDPData(const char* sJson);
+   void sendUDPData(IPAddress ipaddr, const char* sJson);
 
    // put this to public for external call
    void Marstek_GetDevice();

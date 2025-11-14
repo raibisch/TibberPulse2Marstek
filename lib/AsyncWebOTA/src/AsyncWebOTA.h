@@ -12,7 +12,7 @@
   #include <WiFi.h>
   #include <HTTPClient.h> 
   #include <Preferences.h>
-  #include <SPIFFS.h>
+
   #include "Update.h"
 #else
   #include <ESP8266WiFi.h>

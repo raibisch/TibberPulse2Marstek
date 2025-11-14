@@ -3,8 +3,11 @@
 
 #include <Arduino.h>
 
+
 #ifdef ESP32
+#ifndef ESP32_C3
   #include <SPIFFS.h> 
+#endif
   #include <HTTPClient.h>
   #include <AsyncTCP.h>
   //#include <ESPmDNS.h>
@@ -73,7 +76,7 @@ class EMxSimulator
    EnergyData PhaseEnergy[3];
    String serJsonResponse;
    double filterFactor;
-   u_int16_t udpRequestCount = 0; // increment at getPowerData, reset at parseUdpRPC
+   u_int16_t udpRequestCount = 0xffff; // increment at getPowerData, reset at parseUdpRPC
 
    const uint8_t defaultVoltage = 230;
    const uint8_t defaultFrequency = 50;

@@ -16,7 +16,6 @@ Die Bibliothek stellt verschiedenste Funktionen zum Abfragen und Manipulieren vo
 // now set in platformio.ini
 //#define DEBUG_PRINT 1    // SET TO 0 OUT TO REMOVE TRACES
 #ifdef DEBUG_PRINT
-#pragma message("Info : DEBUG_PRINT=1")
 #define debug_begin(...) Serial.begin(__VA_ARGS__);
 #define debug_print(...) Serial.print(__VA_ARGS__);
 #define debug_write(...) Serial.write(__VA_ARGS__);

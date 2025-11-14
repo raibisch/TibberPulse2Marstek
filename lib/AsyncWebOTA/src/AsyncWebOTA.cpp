@@ -15,7 +15,6 @@
 #define debug_println(...)
 #endif
 
-
 /* 
 include this script im Webpage 'log.html' or include it in PROG_MEM definition of HTML-Code
 <script>
@@ -107,7 +106,7 @@ void AsyncWebOTAClass::begin(AsyncWebServer *server, const char* url)
   {
    //Serial.println("/otam.html request content lenght:" + String(request->contentLength()));
    //AsyncWebServerResponse * response = request->beginResponse(myFS,"/ota.html", String(), false, NULL);
-     request->send(SPIFFS, "/ota.html", String(), false, NULL);
+     request->send(myFS, "/ota.html", String(), false, NULL);
    //Serial.println("Request /ota.html");
    /*
    if (request->args() > 0)

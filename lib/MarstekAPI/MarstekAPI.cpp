@@ -10,7 +10,7 @@
 static   unsigned long   _timer_rx_wait = 0;
 
 
-void MarstekAPI::sendUDPData(const char* sJson)
+void MarstekAPI::sendUDPData(IPAddress ipaddr, const char* sJson)
 {
    debug_print("->Tx UDP ");
    debug_print(_remoteIPaddr);
@@ -19,7 +19,7 @@ void MarstekAPI::sendUDPData(const char* sJson)
    debug_println(serJsonRequest);
 
   //_UdpRPC.setTimeout(1500);
-  _UdpRPC.beginPacket(_remoteIPaddr, _remotePort);
+  _UdpRPC.beginPacket(ipaddr, _remotePort);
   _UdpRPC.UDPPRINT(sJson);
    getUDPData();
   _UdpRPC.endPacket();
@@ -74,8 +74,10 @@ void MarstekAPI::Marstek_GetDevice() {
   serializeJson(jsonRequest, serJsonRequest);
   debug_println(serJsonRequest);
   AsyncWebLog.println("[MARS]-TX->MarstekGetDevice\r\n");
+  IPAddress ipBroadcast;
+  ipBroadcast.fromString(UDP_BROADCAST_ADDR);
+  sendUDPData(ipBroadcast, serJsonRequest.c_str());
 
-  sendUDPData(serJsonRequest.c_str());
 
   //_UdpRPC.beginPacket(_remoteIPaddr, _remotePort);
   //_UdpRPC.UDPPRINT(serJsonRequest.c_str());
@@ -164,7 +166,7 @@ void MarstekAPI::Bat_GetStatus() {
 
   String sRequest = "{\"id\":0, \"method\":\"Bat.GetStatus\", \"params\":{\"id\":0}}";
 
-  sendUDPData(sRequest.c_str());
+  sendUDPData(_remoteIPaddr, sRequest.c_str());
   //sendUDPData(serJsonRequest.c_str());
 
   //_UdpRPC.beginPacket(_remoteIPaddr, _remotePort);
@@ -253,22 +255,18 @@ example 3: Bat charging
 /// @brief  "ES.GetMode"
 void MarstekAPI::ES_GetMode() 
 {
+  /*
   JsonDocument jsonRequest;
-  
   jsonRequest["id"] = 0;
   jsonRequest["method"] = "ES.GetMode";
   jsonRequest["params"]["id"] = 0;
 
   serializeJson(jsonRequest, serJsonRequest);
+  */
 
    AsyncWebLog.println("[MARS]-Tx->:ESGetMode\r\n");
    String sRequest = "{\"id\":0, \"method\":\"ES.GetMode\", \"params\":{\"id\":0}}";
-   sendUDPData(sRequest.c_str());
-   //sendUDPData(serJsonRequest.c_str());
-
-   //_UdpRPC.beginPacket(_remoteIPaddr, _remotePort);
-   //_UdpRPC.UDPPRINT(serJsonRequest.c_str());
-   //_UdpRPC.endPacket();
+   sendUDPData(_remoteIPaddr, sRequest.c_str());
 }
 
 
@@ -295,9 +293,8 @@ void MarstekAPI::ES_GetMode()
 
 void MarstekAPI::ES_GetStatus()
 {
-
    String sRequest = "{\"id\":0, \"method\":\"ES.GetStatus\", \"params\":{\"id\":0}}";
-   sendUDPData(sRequest.c_str());
+   sendUDPData(_remoteIPaddr, sRequest.c_str());
 
 }
 
@@ -394,7 +391,7 @@ void MarstekAPI::loop()
     case RequestType::ES_GETMODE:
       ES_GetMode();
 	  // for beta test only 'ES.GetMode'
-      //nextRequest = RequestType::MARSTEK_GETDEVICE;
+      nextRequest = RequestType::MARSTEK_GETDEVICE;
       break;
 	case RequestType::ES_GETSTATUS:
 	  ES_GetStatus();

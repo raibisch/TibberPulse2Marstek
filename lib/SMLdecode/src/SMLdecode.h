@@ -3,7 +3,14 @@
 #include <Arduino.h>
 
 #ifdef ESP32
+#ifdef ESP32_C3
+  #include <FS.h>
+  #include <LittleFS.h>
+#else
+  #include <FS.h>
+  #include <LittleFS.h>
   #include <SPIFFS.h> 
+#endif
   #include <HTTPClient.h>
   #include <AsyncTCP.h>
   #include <ESPmDNS.h>

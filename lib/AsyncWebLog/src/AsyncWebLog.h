@@ -5,9 +5,7 @@
 #include "stdlib_noniso.h"
 #include <functional>
 
-
 #ifdef ESP32
-  #include <SPIFFS.h> 
   #include <HTTPClient.h>
   #include <AsyncTCP.h>
   #include <ESPmDNS.h>

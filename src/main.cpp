@@ -3,10 +3,19 @@
 #include <Esp.h>
 #include <FS.h>
 #include <Preferences.h>     
-#include <base64.h>     
+#include <base64.h>  
+
            
 #ifdef ESP32
-  #include <SPIFFS.h> 
+  
+#ifdef ESP32_C3
+  #include <HTTPClient.h>
+  #include <AsyncTCP.h>
+  #include <ESPmDNS.h>
+  #include <WiFi.h>
+  #include <HTTPClient.h> 
+  #include <Preferences.h>
+#else
   #include "soc/soc.h"
   #include "soc/rtc_cntl_reg.h"  
   #include "esp_rom_gpio.h"
@@ -19,6 +28,7 @@
   #include <WiFi.h>
   #include <HTTPClient.h> 
   #include <Preferences.h>
+#endif
 #else
   #include <ESP8266WiFi.h>
   #include <ESP8266HTTPClient.h>
@@ -88,9 +98,17 @@
 #endif
 
 
+
+
 #ifdef ESP32_S3_DEVKIT
  #pragma message("Info : ESP32_S3_DEVKIT")
  //#define NEOPIXEL 48
+#endif
+
+
+#ifdef ESP32_C3_SUPERMINI
+ #pragma message("Info : ESP32_S3_DEVKIT")
+ #define LED_GPIO 8
 #endif
 
 const char* SYS_Version = "V 1.0.0";
@@ -150,26 +168,32 @@ void setLED(uint8_t i)
 #if defined ESP32_S3_ZERO || defined ESP32_S3_DEVKIT
 if (i==0)
  {
-    neopixelWrite(NEOPIXEL,0,0,0); // off
+    rgbLedWrite(NEOPIXEL,0,0,0);
+    //neopixelWrite(NEOPIXEL,0,0,0); // off
  }
  else
  {
     switch (neopixel_color)
     {
     case 'r': 
-      neopixelWrite(NEOPIXEL,2,0,0); // red
+      rgbLedWrite(NEOPIXEL,2,0,0);
+      //neopixelWrite(NEOPIXEL,2,0,0); // red
       break;
     case 'g':
-      neopixelWrite(NEOPIXEL,0,2,0); // green
+      rgbLedWrite(NEOPIXEL,0,2,0);
+      //neopixelWrite(NEOPIXEL,0,2,0); // green
       break;
     case 'b':
-      neopixelWrite(NEOPIXEL,0,0,2); // blue
+      rgbLedWrite(NEOPIXEL,0,0,2);
+      //neopixelWrite(NEOPIXEL,0,0,2); // blue
       break;
     case 'y':
-       neopixelWrite(NEOPIXEL,1,1,0); // yellow
+      rgbLedWrite(NEOPIXEL,1,1,0);
+       //neopixelWrite(NEOPIXEL,1,1,0); // yellow
       break;
     case 'w':
-      neopixelWrite(NEOPIXEL,1,1,1); // white
+      rgbLedWrite(NEOPIXEL,1,1,1);
+      //neopixelWrite(NEOPIXEL,1,1,1); // white
       break;
     default:
        break;
@@ -209,7 +233,7 @@ void inline initSPIFFS()
 {
   debug_println("*** SPIFFS.begin");
   delay(300);
-  if (!SPIFFS.begin())
+  if (!myFS.begin())
   {
    debug_println("*** ERROR: SPIFFS Mount failed");
   } 
@@ -237,11 +261,12 @@ class VarStore final: public FileVarStore
    String varSML_s_user     = "";
    String varSML_s_password = "";
 #endif
-#if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
+#if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION) 
    uint16_t varEMX_i_port;
+#endif
+#if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)  || (defined ECOTRACK_SIMULATION)
    float    varEMX_f_filterfactor; 
 #endif
-
 #ifdef MARSTEK_API
     int varMARSTEKAPI_i_port;
     String varMARSTEKAPI_s_url;
@@ -559,8 +584,6 @@ void initWebServer()
   webserver.on("/v1/json",          HTTP_GET, [](AsyncWebServerRequest *request)
   {
     String s = ecotrak.buildJsonRequest();
-    AsyncWebLog.printf("[ECOTR]-Tx-> Power:%d\r\n", smldecoder.getWatt());
- 
     request->send(200, "application/json", s);
    
   });
@@ -571,11 +594,12 @@ void initWebServer()
   {
     if (isSTA_MODE) 
     { 
-      request->send(SPIFFS, "/index.html", String(), false, setHtmlVar);
+      request->send(myFS, "/index.html", String(), false, setHtmlVar);
     }
     else
-    {
-      request->send(202, "text/plain", "goto: http://192.168.4.1/ota_ap.html");
+    { // "rescue page" for first run without valid Wifi-credentials or no valid data-system
+      request->redirect("/ota_ap.html");
+      //request->send(202, "text/plain", "goto: http://192.168.4.1/ota_ap.html");
     }
   });
 
@@ -583,26 +607,26 @@ void initWebServer()
   //Route for root /index web page
   webserver.on("/index.html",          HTTP_GET, [](AsyncWebServerRequest *request)
   {
-   request->send(SPIFFS, "/index.html", String(), false, setHtmlVar);
+   request->send(myFS, "/index.html", String(), false, setHtmlVar);
   });
  
   //Route for config web page
   webserver.on("/config.html",          HTTP_GET, [](AsyncWebServerRequest *request)
   {
-   request->send(SPIFFS, "/config.html", String(), false, setHtmlVar);
+   request->send(myFS, "/config.html", String(), false, setHtmlVar);
   });
   //Route for Info-page
   webserver.on("/info.html",          HTTP_GET, [](AsyncWebServerRequest *request)
   {
    String s = (String)
    varStore.SetVarString("varLogCount_s_val", ntpclient.getTimeString());
-   request->send(SPIFFS, "/info.html", String(), false, setHtmlVar);
+   request->send(myFS, "/info.html", String(), false, setHtmlVar);
   });
 
   //Route for Chart
   webserver.on("/gridchart.html",          HTTP_GET, [](AsyncWebServerRequest *request)
   {
-   request->send(SPIFFS, "/gridchart.html", String(), false, setHtmlVar);
+   request->send(myFS, "/gridchart.html", String(), false, setHtmlVar);
   });
 
   // chart Icon
@@ -675,7 +699,7 @@ void initWebServer()
        //varStore.Load();
    }
    //debug_println("Request /index3.html");
-   request->send(SPIFFS, "/config.html", String(), false, setHtmlVar);
+   request->send(myFS, "/config.html", String(), false, setHtmlVar);
   });
   
    // init Webserver for libs
@@ -694,11 +718,12 @@ void initWebServer()
 ////////////////////////////////////////////////////
 void setup() 
 {
-  Serial.begin(115200);  
-  Serial.println("***START***");                                       
-  delay(500);
-  
+  Serial.begin(115200);                                     
   initLED();
+  delay(500);
+  Serial.println("***START***");    
+  //Serial.printf("PSRAM Total heap %d, PSRAM Free Heap %d\n",ESP.getPsramSize(),ESP.getFreePsram()); 
+  delay(1000);
   initSPIFFS();
   initFileVarStore(); 
   setcolor('b'); // blue
@@ -713,7 +738,6 @@ void setup()
   setcolor('g'); // green
   setLED(1);
   delay(1000);
-
   if (!isSTA_MODE)
   {
     return;
@@ -730,7 +754,7 @@ void setup()
 #endif
 
 #ifdef ECOTRACK_SIMULATION
-   ecotrak.begin();
+   ecotrak.begin(varStore.varEMX_f_filterfactor);
 #endif
 }
 
@@ -784,7 +808,7 @@ void loop()
   {
     TimerFast = millis();
 #if (defined EM1_UDP_SIMULATION) || (defined EM3_UDP_SIMULATION)
-    if (shellyEMx.getRequestTimeout())
+    if (shellyEMx.getRequestTimeout() && ecotrak.getRequestTimeout())
     {
       setLED(1);
       timeout_count++;
